@@ -64,6 +64,15 @@ api/controller/  →  service/  →  repository/ (JPA)  →  PostgreSQL
 ### Frontend API Client
 `lib/api.ts` is the single API client — all HTTP calls go through it. It handles auth headers, 401 token refresh, and typed responses. `lib/auth.ts` manages JWT in localStorage. `components/auth-guard.tsx` wraps protected routes.
 
+### UI Components (shadcn/ui)
+This project uses **shadcn/ui** as the primary component library. Always follow these rules:
+- **Prefer shadcn components** over custom HTML elements for all UI: `Button`, `Input`, `Dialog`, `Table`, `Select`, `Form`, `Card`, `Badge`, `Tooltip`, `DropdownMenu`, etc.
+- **Use the `Form` + `FormField` + `FormItem` + `FormControl` + `FormMessage` pattern** (from shadcn) with React Hook Form — never build custom form wrappers.
+- **Use `Dialog` / `AlertDialog`** for modals and confirmation prompts instead of custom overlays.
+- **Use `Table`, `TableHeader`, `TableBody`, `TableRow`, `TableCell`** for tabular data.
+- Components live in `frontend/components/ui/`. If a needed component is not yet installed, add it via `npx shadcn@latest add <component>`.
+- Follow the shadcn/ui docs conventions: use `cn()` utility for conditional class merging, and keep variant/size props as-is from the component API.
+
 ## Environment Profiles
 
 | Profile | DB | Boleto | Use Case |

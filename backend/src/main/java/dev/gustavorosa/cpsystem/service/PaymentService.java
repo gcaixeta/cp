@@ -5,11 +5,14 @@ import dev.gustavorosa.cpsystem.api.response.GroupedPaymentResponse;
 import dev.gustavorosa.cpsystem.api.response.PaymentResponse;
 import dev.gustavorosa.cpsystem.exception.PaymentNotFoundException;
 import dev.gustavorosa.cpsystem.model.Payment;
+import dev.gustavorosa.cpsystem.model.PaymentGroup;
 import dev.gustavorosa.cpsystem.model.PaymentStatus;
 import dev.gustavorosa.cpsystem.repository.PaymentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -106,6 +109,7 @@ public class PaymentService {
         }
 
         updateStatus(payment);
+        recalculateOverdueValue(payment);
 
         return paymentRepository.save(payment).toResponse();
     }
@@ -115,7 +119,7 @@ public class PaymentService {
                 .orElseThrow(() -> new PaymentNotFoundException("Payment with id " + id + " not found"));
 
         payment.setPaymentDate(LocalDate.now());
-        
+
         // Check if payment is late
         if (payment.getDueDate().isBefore(LocalDate.now())) {
             payment.setPaymentStatus(PaymentStatus.PAID_LATE);
@@ -123,7 +127,37 @@ public class PaymentService {
             payment.setPaymentStatus(PaymentStatus.PAID);
         }
 
+        recalculateOverdueValue(payment);
+
         return paymentRepository.save(payment).toResponse();
+    }
+
+    private void recalculateOverdueValue(Payment payment) {
+        PaymentGroup group = payment.getPaymentGroup();
+        if (group == null) {
+            return;
+        }
+
+        LocalDate referenceDate = payment.getPaymentDate() != null ? payment.getPaymentDate() : LocalDate.now();
+        long daysOverdue = referenceDate.toEpochDay() - payment.getDueDate().toEpochDay();
+
+        if (daysOverdue <= 0) {
+            payment.setOverdueValue(null);
+            payment.setOverdueValueDate(null);
+            return;
+        }
+
+        BigDecimal originalValue = payment.getOriginalValue();
+        BigDecimal lateFeeRate = group.getLateFeeRate() != null ? group.getLateFeeRate() : BigDecimal.ZERO;
+        BigDecimal monthlyInterestRate = group.getMonthlyInterestRate() != null ? group.getMonthlyInterestRate() : BigDecimal.ZERO;
+
+        BigDecimal lateFee = originalValue.multiply(lateFeeRate);
+        BigDecimal dailyInterestRate = monthlyInterestRate.divide(BigDecimal.valueOf(30), 10, RoundingMode.HALF_UP);
+        BigDecimal totalInterest = originalValue.multiply(dailyInterestRate).multiply(BigDecimal.valueOf(daysOverdue));
+        BigDecimal newOverdueValue = originalValue.add(lateFee).add(totalInterest).setScale(2, RoundingMode.HALF_UP);
+
+        payment.setOverdueValue(newOverdueValue);
+        payment.setOverdueValueDate(referenceDate);
     }
 
     private void updateStatus(Payment payment) {
