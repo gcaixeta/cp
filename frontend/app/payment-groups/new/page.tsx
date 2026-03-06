@@ -44,6 +44,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox"
 import { createPaymentGroup, fetchClients, fetchClientById, type Client } from "@/lib/api"
 import { cn } from "@/lib/utils"
+import { formatDocument as formatDocumentInput, formatPhone, formatInputCurrency, formatInputPercentage } from "@/lib/format"
 
 const formSchema = z.object({
   clientId: z.string().min(1, "Selecione um cliente"),
@@ -95,55 +96,6 @@ export default function NewPaymentGroupPage() {
     }
     loadClients()
   }, [])
-
-  const formatCPFCNPJ = (value: string) => {
-    const numbers = value.replace(/\D/g, "")
-    
-    if (numbers.length <= 11) {
-      // CPF: 000.000.000-00
-      return numbers
-        .replace(/(\d{3})(\d)/, "$1.$2")
-        .replace(/(\d{3})(\d)/, "$1.$2")
-        .replace(/(\d{3})(\d{1,2})$/, "$1-$2")
-    } else {
-      // CNPJ: 00.000.000/0000-00
-      return numbers
-        .replace(/(\d{2})(\d)/, "$1.$2")
-        .replace(/(\d{3})(\d)/, "$1.$2")
-        .replace(/(\d{3})(\d)/, "$1/$2")
-        .replace(/(\d{4})(\d{1,2})$/, "$1-$2")
-    }
-  }
-
-  const formatCurrency = (value: string) => {
-    const numbers = value.replace(/\D/g, "")
-    const amount = parseFloat(numbers) / 100
-    return amount.toLocaleString("pt-BR", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })
-  }
-
-  const formatPercentage = (value: string) => {
-    const numbers = value.replace(/\D/g, "")
-    const amount = parseFloat(numbers) / 100
-    return amount.toLocaleString("pt-BR", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })
-  }
-
-  const formatPhone = (value: string) => {
-    const numbers = value.replace(/\D/g, "")
-    if (numbers.length === 11) {
-      // Celular: (00) 00000-0000
-      return numbers.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3")
-    } else if (numbers.length === 10) {
-      // Fixo: (00) 0000-0000
-      return numbers.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3")
-    }
-    return value
-  }
 
   const handleClientChange = async (clientId: string) => {
     if (clientId) {
@@ -211,7 +163,8 @@ export default function NewPaymentGroupPage() {
   }
 
   return (
-    <div className="container mx-auto py-10 max-w-3xl">
+    <main className="sm:ml-14 p-4">
+    <div className="max-w-3xl mx-auto py-6">
       <Card>
         <CardHeader>
           <CardTitle>Novo Grupo de Pagamentos</CardTitle>
@@ -289,7 +242,7 @@ export default function NewPaymentGroupPage() {
                           placeholder="000.000.000-00"
                           {...field}
                           onChange={(e) => {
-                            const formatted = formatCPFCNPJ(e.target.value)
+                            const formatted = formatDocumentInput(e.target.value)
                             field.onChange(formatted)
                           }}
                           maxLength={18}
@@ -344,7 +297,7 @@ export default function NewPaymentGroupPage() {
                               className="pl-10"
                               {...field}
                               onChange={(e) => {
-                                const formatted = formatCurrency(e.target.value)
+                                const formatted = formatInputCurrency(e.target.value)
                                 field.onChange(formatted)
                               }}
                             />
@@ -393,7 +346,7 @@ export default function NewPaymentGroupPage() {
                               placeholder="0,00"
                               {...field}
                               onChange={(e) => {
-                                const formatted = formatPercentage(e.target.value)
+                                const formatted = formatInputPercentage(e.target.value)
                                 field.onChange(formatted)
                               }}
                             />
@@ -420,7 +373,7 @@ export default function NewPaymentGroupPage() {
                               placeholder="0,00"
                               {...field}
                               onChange={(e) => {
-                                const formatted = formatPercentage(e.target.value)
+                                const formatted = formatInputPercentage(e.target.value)
                                 field.onChange(formatted)
                               }}
                             />
@@ -529,7 +482,7 @@ export default function NewPaymentGroupPage() {
             </form>
           </Form>
         </CardContent>
-        <CardFooter className="flex justify-between">
+        <CardFooter className="flex justify-between border-t p-6">
           <Button
             type="button"
             variant="outline"
@@ -549,5 +502,6 @@ export default function NewPaymentGroupPage() {
         </CardFooter>
       </Card>
     </div>
+    </main>
   )
 }
