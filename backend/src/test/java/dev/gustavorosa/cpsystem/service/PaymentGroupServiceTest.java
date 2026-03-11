@@ -18,9 +18,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
+
 
 @ExtendWith(MockitoExtension.class)
 class PaymentGroupServiceTest {
@@ -154,6 +156,48 @@ class PaymentGroupServiceTest {
         // PAID_LATE uses overdueValue (550)
         assertEquals(0, new BigDecimal("550.00").compareTo(response.totalPaid()));
         assertEquals(0, new BigDecimal("500.00").compareTo(response.totalRemaining()));
+    }
+
+    // ==========================================
+    // CP-29: Excluir grupo de pagamento
+    // ==========================================
+
+    @Test
+    void deletePaymentGroup_shouldDeletePaymentsAndGroup() {
+        PaymentGroup group = createMockGroup(1L, "Grupo Delete");
+        List<Payment> payments = createMockPayments(group);
+
+        when(paymentGroupRepository.findById(1L)).thenReturn(Optional.of(group));
+        when(paymentRepository.findByPaymentGroupId(1L)).thenReturn(payments);
+
+        paymentGroupService.deletePaymentGroup(1L);
+
+        verify(paymentRepository).deleteAll(payments);
+        verify(paymentGroupRepository).delete(group);
+    }
+
+    @Test
+    void deletePaymentGroup_shouldDeleteGroupWithNoPayments() {
+        PaymentGroup group = createMockGroup(1L, "Grupo Empty");
+
+        when(paymentGroupRepository.findById(1L)).thenReturn(Optional.of(group));
+        when(paymentRepository.findByPaymentGroupId(1L)).thenReturn(List.of());
+
+        paymentGroupService.deletePaymentGroup(1L);
+
+        verify(paymentRepository).deleteAll(List.of());
+        verify(paymentGroupRepository).delete(group);
+    }
+
+    @Test
+    void deletePaymentGroup_shouldThrowException_whenGroupNotFound() {
+        when(paymentGroupRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class, () ->
+                paymentGroupService.deletePaymentGroup(99L));
+
+        verify(paymentRepository, never()).deleteAll(any());
+        verify(paymentGroupRepository, never()).delete(any());
     }
 
     private PaymentGroup createMockGroup(Long id, String name) {
