@@ -50,6 +50,7 @@ public class PaymentGroupService {
                 .filter(p -> p.getPaymentStatus() == PaymentStatus.PAID || p.getPaymentStatus() == PaymentStatus.PAID_LATE)
                 .count();
 
+        String payerName = payments.isEmpty() ? null : payments.get(0).getPayerName();
         BigDecimal monthlyValue = payments.isEmpty() ? BigDecimal.ZERO : payments.get(0).getOriginalValue();
 
         BigDecimal totalPaid = payments.stream()
@@ -65,6 +66,7 @@ public class PaymentGroupService {
         return new PaymentGroupResponse(
                 group.getId(),
                 group.getGroupName(),
+                payerName,
                 group.getClient().getName(),
                 group.getClient().getId(),
                 group.getPayerDocument(),

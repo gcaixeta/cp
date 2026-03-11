@@ -3,7 +3,7 @@
 import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet"
 import { Button } from "../ui/button"
 import Link from "next/link"
-import { Banknote, FileText, FolderOpen, Home, LayoutDashboardIcon, LogOut, Package, PanelLeft, Settings, Users } from "lucide-react"
+import { Banknote, FileText, ClipboardList, Home, LayoutDashboardIcon, LogOut, Package, PanelLeft, Settings, Users } from "lucide-react"
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "../ui/tooltip"
 import { logout } from "@/lib/auth"
 
@@ -63,7 +63,7 @@ export function Sidebar() {
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg
                   text-muted-foreground transition-colors hover:text-foreground"
                 >
-                  <FolderOpen className="h-5 w-5" />
+                  <ClipboardList className="h-5 w-5" />
                   <span className="sr-only">Contratos</span>
                 </Link>
               </TooltipTrigger>
@@ -164,7 +164,7 @@ export function Sidebar() {
                   href="/payment-groups"
                   className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
                 >
-                  <FolderOpen className="h-5 w-5 transition-all" />
+                  <ClipboardList className="h-5 w-5 transition-all" />
                   Contratos
                 </Link>
 
