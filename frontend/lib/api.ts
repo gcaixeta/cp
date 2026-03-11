@@ -187,6 +187,7 @@ export async function fetchBoletoByPaymentId(paymentId: number): Promise<BoletoR
 export interface PaymentGroupListItem {
   id: number;
   groupName: string;
+  payerName: string | null;
   clientName: string;
   clientId: number;
   payerDocument: string;

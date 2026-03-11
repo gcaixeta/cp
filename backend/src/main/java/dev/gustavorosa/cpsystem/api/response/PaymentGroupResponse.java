@@ -6,6 +6,7 @@ import java.time.LocalDate;
 public record PaymentGroupResponse(
         Long id,
         String groupName,
+        String payerName,
         String clientName,
         Long clientId,
         String payerDocument,

@@ -55,6 +55,7 @@ class PaymentGroupServiceTest {
         assertEquals(1, result.size());
         PaymentGroupResponse response = result.get(0);
         assertEquals("Grupo A", response.groupName());
+        assertEquals("Payer", response.payerName());
         assertEquals("Test Client", response.clientName());
         assertEquals(3, response.totalInstallments());
     }
