@@ -127,16 +127,16 @@ upload_to_s3() {
 
 cleanup_local_backups() {
     log "Limpando backups locais antigos (>${LOCAL_RETENTION_DAYS} dias)..."
-    
+
     local deleted_count=0
-    
+
     # Encontrar e remover arquivos antigos
-    find "$BACKUP_DIR" -name "cpsystem-backup-*.sql.gz" -type f -mtime +${LOCAL_RETENTION_DAYS} | while read file; do
+    while IFS= read -r file; do
         rm -f "$file"
-        log "Removido backup local: $(basename $file)"
-        ((deleted_count++))
-    done
-    
+        log "Removido backup local: $(basename "$file")"
+        deleted_count=$((deleted_count + 1))
+    done < <(find "$BACKUP_DIR" -name "cpsystem-backup-*.sql.gz" -type f -mtime +${LOCAL_RETENTION_DAYS})
+
     if [ $deleted_count -eq 0 ]; then
         log "Nenhum backup local antigo para remover"
     else
@@ -146,25 +146,25 @@ cleanup_local_backups() {
 
 cleanup_s3_backups() {
     log "Limpando backups do S3 (>${RETENTION_DAYS} dias)..."
-    
+
     local cutoff_date=$(date -d "${RETENTION_DAYS} days ago" +%Y-%m-%d)
     local deleted_count=0
-    
-    # Listar backups no S3
-    aws s3 ls "s3://${S3_BUCKET}/" --region "$AWS_REGION" | grep "cpsystem-backup-" | while read -r line; do
+
+    # Listar backups no S3 usando process substitution (evita subshell do pipe)
+    while read -r line; do
         # Extrair nome do arquivo
         local filename=$(echo "$line" | awk '{print $4}')
-        
+
         # Extrair data do nome do arquivo (formato: cpsystem-backup-YYYY-MM-DD_HH-MM-SS.sql.gz)
         local file_date=$(echo "$filename" | grep -oP '\d{4}-\d{2}-\d{2}' | head -1)
-        
-        if [ ! -z "$file_date" ] && [ "$file_date" \< "$cutoff_date" ]; then
+
+        if [ -n "$file_date" ] && [ "$file_date" \< "$cutoff_date" ]; then
             log "Removendo backup do S3: $filename"
             aws s3 rm "s3://${S3_BUCKET}/${filename}" --region "$AWS_REGION"
-            ((deleted_count++))
+            deleted_count=$((deleted_count + 1))
         fi
-    done
-    
+    done < <(aws s3 ls "s3://${S3_BUCKET}/" --region "$AWS_REGION" | grep "cpsystem-backup-" || true)
+
     if [ $deleted_count -eq 0 ]; then
         log "Nenhum backup do S3 antigo para remover"
     else
