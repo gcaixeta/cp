@@ -26,6 +26,14 @@ public class PaymentGroupController {
         return groups;
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deletePaymentGroup(@PathVariable Long id) {
+        log.info("[Entry - PaymentGroupController.deletePaymentGroup] - Deleting payment group with id: {}", id);
+        paymentGroupService.deletePaymentGroup(id);
+        log.info("[Exit - PaymentGroupController.deletePaymentGroup] - Payment group deleted successfully");
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping
     public ResponseEntity<Void> createPaymentGroup(@RequestBody CreatePaymentGroupRequest request) {
         log.info("[Entry - PaymentGroupController.createPaymentGroup] - Creating payment group: {}", request);

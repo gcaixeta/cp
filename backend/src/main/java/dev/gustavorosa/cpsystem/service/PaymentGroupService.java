@@ -82,6 +82,16 @@ public class PaymentGroupService {
     }
 
     @Transactional
+    public void deletePaymentGroup(Long id) {
+        PaymentGroup group = paymentGroupRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Payment group with id " + id + " not found"));
+
+        List<Payment> payments = paymentRepository.findByPaymentGroupId(id);
+        paymentRepository.deleteAll(payments);
+        paymentGroupRepository.delete(group);
+    }
+
+    @Transactional
     public void createPaymentGroup(CreatePaymentGroupRequest request) {
         PaymentGroup newPaymentGroup = paymentGroupFactory.buildPaymentGroup(request);
         paymentGroupRepository.save(newPaymentGroup);

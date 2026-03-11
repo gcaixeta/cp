@@ -18,11 +18,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Plus, FolderOpen } from "lucide-react"
-import { fetchClients, fetchPaymentGroups, type Client, type PaymentGroupListItem } from "@/lib/api"
-import { formatDisplayCurrency, formatDisplayDocument, formatDisplayPhone, formatDisplayPercentage } from "@/lib/format"
+import { Plus, FolderOpen, Trash2 } from "lucide-react"
+import { fetchClients, fetchPaymentGroups, deletePaymentGroup, type Client, type PaymentGroupListItem } from "@/lib/api"
+import { formatDisplayCurrency, formatDisplayDocument } from "@/lib/format"
 
 export default function PaymentGroupsPage() {
   const router = useRouter()
@@ -36,18 +47,29 @@ export default function PaymentGroupsPage() {
   }, [])
 
   useEffect(() => {
-    setLoading(true)
-    fetchPaymentGroups({ clientId: selectedClient })
-      .then(setGroups)
-      .catch(console.error)
-      .finally(() => setLoading(false))
+    loadGroups()
   }, [selectedClient])
 
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return "---"
-    const [year, month, day] = dateString.split('-')
-    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
-    return date.toLocaleDateString("pt-BR")
+  const loadGroups = async () => {
+    setLoading(true)
+    try {
+      const data = await fetchPaymentGroups({ clientId: selectedClient })
+      setGroups(data)
+    } catch (error) {
+      console.error("Failed to load payment groups:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDelete = async (id: number) => {
+    try {
+      await deletePaymentGroup(id)
+      await loadGroups()
+    } catch (error) {
+      console.error("Failed to delete payment group:", error)
+      alert("Erro ao excluir grupo de pagamento. Por favor, tente novamente.")
+    }
   }
 
   const getProgressBadge = (paid: number, total: number) => {
@@ -98,16 +120,17 @@ export default function PaymentGroupsPage() {
             </div>
 
             <div className="rounded-md border overflow-x-auto">
-              <Table className="table-fixed w-full min-w-[1100px]">
+              <Table className="table-fixed w-full min-w-[1200px]">
                 <colgroup>
-                  <col className="w-[18%]" />
-                  <col className="w-[14%]" />
+                  <col className="w-[16%]" />
+                  <col className="w-[12%]" />
                   <col className="w-[12%]" />
                   <col className="w-[10%]" />
                   <col className="w-[10%]" />
                   <col className="w-[12%]" />
                   <col className="w-[12%]" />
-                  <col className="w-[12%]" />
+                  <col className="w-[10%]" />
+                  <col className="w-[6%]" />
                 </colgroup>
                 <TableHeader>
                   <TableRow>
@@ -119,18 +142,19 @@ export default function PaymentGroupsPage() {
                     <TableHead className="text-right">Total Pago</TableHead>
                     <TableHead className="text-right">Total Restante</TableHead>
                     <TableHead className="text-center">Situação</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {loading ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="h-24 text-center">
+                      <TableCell colSpan={9} className="h-24 text-center">
                         Carregando...
                       </TableCell>
                     </TableRow>
                   ) : groups.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="h-40">
+                      <TableCell colSpan={9} className="h-40">
                         <div className="flex flex-col items-center justify-center gap-4 text-muted-foreground">
                           <FolderOpen className="h-12 w-12 opacity-50" />
                           <div className="text-center">
@@ -158,6 +182,36 @@ export default function PaymentGroupsPage() {
                         <TableCell className="text-right">{formatDisplayCurrency(group.totalRemaining)}</TableCell>
                         <TableCell className="text-center">
                           {getProgressBadge(group.paidInstallments, group.totalInstallments)}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center justify-end">
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:text-destructive">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Excluir grupo de pagamento</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Tem certeza que deseja excluir o grupo &quot;{group.groupName || `Grupo #${group.id}`}&quot;?
+                                    Todos os pagamentos e boletos associados serão excluídos permanentemente.
+                                    Esta ação não pode ser desfeita.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleDelete(group.id)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Excluir
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))

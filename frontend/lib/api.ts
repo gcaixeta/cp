@@ -214,6 +214,14 @@ export async function fetchPaymentGroups(filters?: {
   return handleResponse<PaymentGroupListItem[]>(response);
 }
 
+export async function deletePaymentGroup(id: number): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/payment-group/${id}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
+  return handleResponse<void>(response);
+}
+
 export async function updatePayment(id: number, data: {
   originalValue: number;
   dueDate: string; // ISO format YYYY-MM-DD
