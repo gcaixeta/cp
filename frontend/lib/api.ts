@@ -184,6 +184,36 @@ export async function fetchBoletoByPaymentId(paymentId: number): Promise<BoletoR
   return handleResponse<BoletoResponse>(response);
 }
 
+export interface PaymentGroupListItem {
+  id: number;
+  groupName: string;
+  clientName: string;
+  clientId: number;
+  payerDocument: string;
+  payerPhone: string | null;
+  totalInstallments: number;
+  paidInstallments: number;
+  lateFeeRate: number | null;
+  monthlyInterestRate: number | null;
+  monthlyValue: number;
+  totalPaid: number;
+  totalRemaining: number;
+  creationDate: string | null;
+  observation: string | null;
+}
+
+export async function fetchPaymentGroups(filters?: {
+  clientId?: string;
+}): Promise<PaymentGroupListItem[]> {
+  const params = new URLSearchParams();
+  if (filters?.clientId && filters.clientId !== 'all') params.append('clientId', filters.clientId);
+
+  const response = await fetch(`${API_BASE_URL}/payment-group?${params.toString()}`, {
+    headers: getAuthHeaders(),
+  });
+  return handleResponse<PaymentGroupListItem[]>(response);
+}
+
 export async function updatePayment(id: number, data: {
   originalValue: number;
   dueDate: string; // ISO format YYYY-MM-DD

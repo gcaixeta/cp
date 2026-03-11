@@ -30,6 +30,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     List<Payment> findByPaymentStatus(PaymentStatus paymentStatus);
 
+    List<Payment> findByPaymentGroupId(Long paymentGroupId);
+
     @Query(value = "SELECT * FROM payments p WHERE (CAST(:clientId AS TEXT) IS NULL OR p.client_id = :clientId) " +
            "AND (CAST(:status AS TEXT) IS NULL OR p.payment_status = :status) " +
            "AND (p.due_date BETWEEN :startDate AND :endDate)", nativeQuery = true)

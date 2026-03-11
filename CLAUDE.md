@@ -25,8 +25,10 @@ npm run lint     # Run ESLint
 ./mvnw spring-boot:run -Dspring.profiles.active=sandbox   # Banco Inter sandbox
 ./mvnw spring-boot:run -Dspring.profiles.active=prod      # Production
 
-./mvnw clean package   # Build JAR
-./mvnw test            # Run tests
+./mvnw clean package                        # Build JAR
+./mvnw test                                 # Run all tests
+./mvnw test -Dtest=ClassName                # Run a single test class
+./mvnw test -Dtest=ClassName#methodName     # Run a single test method
 ```
 
 ### Docker (full stack)
@@ -61,6 +63,16 @@ api/controller/  →  service/  →  repository/ (JPA)  →  PostgreSQL
 - **Global exception handler** in `exception/` catches and formats all API errors.
 - Database schema managed via **Flyway** in `src/main/resources/db/migration/`.
 
+### Domain Model
+
+```
+Client (borrower/customer)
+  └── PaymentGroup (loan contract: payer, monthly value, total installments)
+        └── Payment (individual installment: due date, status, overdue value)
+```
+
+`PaymentStatus`: `PENDING` → `PAID` / `PAID_LATE` / `OVERDUE`. A scheduled job runs daily to mark unpaid past-due payments as `OVERDUE` and recalculates `overdueValue` with late fees and interest.
+
 ### Frontend API Client
 `lib/api.ts` is the single API client — all HTTP calls go through it. It handles auth headers, 401 token refresh, and typed responses. `lib/auth.ts` manages JWT in localStorage. `components/auth-guard.tsx` wraps protected routes.
 
@@ -77,7 +89,7 @@ This project uses **shadcn/ui** as the primary component library. Always follow 
 
 | Profile | DB | Boleto | Use Case |
 |---------|-----|--------|----------|
-| `local` | H2/embedded or env | Mock (instant, no creds needed) | Local dev |
+| `local` | PostgreSQL (via env vars) | Mock (instant, no creds needed) | Local dev |
 | `dev` | PostgreSQL | Mock | Dev with real DB |
 | `sandbox` | PostgreSQL | Banco Inter sandbox | Integration testing |
 | `prod` | PostgreSQL | Banco Inter production | Production |
