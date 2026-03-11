@@ -1,0 +1,62 @@
+# Configuração para ambiente Sandbox do Banco Inter
+# Use este profile para testes com a API sandbox do Inter
+# 
+# Ativação: ./mvnw spring-boot:run -Dspring.profiles.active=sandbox
+# 
+# IMPORTANTE: Você precisa ter credenciais de sandbox do Banco Inter
+# Obtenha em: https://developers.bancointer.com.br/
+
+spring:
+  application:
+    name: cpsystem-sandbox
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/cobranca}
+    username: ${SPRING_DATASOURCE_USERNAME:gustavo}
+    password: ${SPRING_DATASOURCE_PASSWORD:139150}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true  # Habilita SQL logs para debug
+  flyway:
+    out-of-order: true
+
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET:sandbox_secret_key_for_testing_only}
+  expiration-ms: ${JWT_EXPIRATION_MS:3600000}
+
+# Authentication Configuration
+auth:
+  user:
+    email: ${AUTH_USER_EMAIL:admin@example.com}
+    password: ${AUTH_USER_PASSWORD:admin123}
+
+# CORS Configuration
+cors:
+  allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000,http://localhost}
+
+# Banco Inter Sandbox Configuration
+bank:
+  mock:
+    enabled: false  # Mock desabilitado - usando sandbox real
+  inter:
+    api:
+      # URLs do ambiente Sandbox
+      url: https://sandbox.partners.bancointer.com.br
+      oauth-url: https://sandbox.partners.bancointer.com.br/oauth/v2/token
+    client:
+      # Credenciais de Sandbox (obtenha no portal do desenvolvedor)
+      id: ${INTER_SANDBOX_CLIENT_ID}
+      secret: ${INTER_SANDBOX_CLIENT_SECRET}
+    certificate:
+      # Certificado de Sandbox
+      path: ${INTER_SANDBOX_CERTIFICATE_PATH:classpath:certs/inter-sandbox-cert.p12}
+      password: ${INTER_SANDBOX_CERTIFICATE_PASSWORD}
+    scopes: "boleto-cobranca.read boleto-cobranca.write"
+
+# Logging para debug
+logging:
+  level:
+    dev.gustavorosa.cpsystem.boleto: DEBUG
+    org.springframework.web.client: DEBUG
+    org.springframework.security: INFO

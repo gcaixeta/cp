@@ -1,5 +1,8 @@
 package dev.gustavorosa.cpsystem.exception;
 
+import dev.gustavorosa.cpsystem.boleto.exception.BankNotSupportedException;
+import dev.gustavorosa.cpsystem.boleto.exception.BoletoAlreadyExistsException;
+import dev.gustavorosa.cpsystem.boleto.exception.BoletoGenerationException;
 import dev.gustavorosa.cpsystem.exception.dto.ErrorResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -29,6 +32,36 @@ public class GlobalExceptionHandler {
                 ex.getMessage()
         );
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    @ExceptionHandler(BoletoGenerationException.class)
+    public ResponseEntity<ErrorResponse> handleBoletoGenerationException(BoletoGenerationException ex) {
+        log.error("[ExceptionHandler] - Boleto generation error: {}", ex.getMessage());
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                ex.getMessage()
+        );
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+    }
+
+    @ExceptionHandler(BoletoAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleBoletoAlreadyExistsException(BoletoAlreadyExistsException ex) {
+        log.error("[ExceptionHandler] - Boleto already exists: {}", ex.getMessage());
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.CONFLICT.value(),
+                ex.getMessage()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    @ExceptionHandler(BankNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleBankNotSupportedException(BankNotSupportedException ex) {
+        log.error("[ExceptionHandler] - Bank not supported: {}", ex.getMessage());
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                ex.getMessage()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     @ExceptionHandler(Exception.class)

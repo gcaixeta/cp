@@ -41,8 +41,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { Checkbox } from "@/components/ui/checkbox"
 import { createPaymentGroup, fetchClients, fetchClientById, type Client } from "@/lib/api"
 import { cn } from "@/lib/utils"
+import { formatDocument as formatDocumentInput, formatPhone, formatInputCurrency, formatInputPercentage } from "@/lib/format"
 
 const formSchema = z.object({
   clientId: z.string().min(1, "Selecione um cliente"),
@@ -55,6 +57,7 @@ const formSchema = z.object({
   monthlyInterestRate: z.string().optional(),
   firstInstallmentDueDate: z.date(),
   observation: z.string().optional(),
+  generateBoletos: z.boolean().optional(),
 })
 
 export default function NewPaymentGroupPage() {
@@ -76,6 +79,7 @@ export default function NewPaymentGroupPage() {
       lateFeeRate: "",
       monthlyInterestRate: "",
       observation: "",
+      generateBoletos: false,
     },
   })
 
@@ -92,55 +96,6 @@ export default function NewPaymentGroupPage() {
     }
     loadClients()
   }, [])
-
-  const formatCPFCNPJ = (value: string) => {
-    const numbers = value.replace(/\D/g, "")
-    
-    if (numbers.length <= 11) {
-      // CPF: 000.000.000-00
-      return numbers
-        .replace(/(\d{3})(\d)/, "$1.$2")
-        .replace(/(\d{3})(\d)/, "$1.$2")
-        .replace(/(\d{3})(\d{1,2})$/, "$1-$2")
-    } else {
-      // CNPJ: 00.000.000/0000-00
-      return numbers
-        .replace(/(\d{2})(\d)/, "$1.$2")
-        .replace(/(\d{3})(\d)/, "$1.$2")
-        .replace(/(\d{3})(\d)/, "$1/$2")
-        .replace(/(\d{4})(\d{1,2})$/, "$1-$2")
-    }
-  }
-
-  const formatCurrency = (value: string) => {
-    const numbers = value.replace(/\D/g, "")
-    const amount = parseFloat(numbers) / 100
-    return amount.toLocaleString("pt-BR", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })
-  }
-
-  const formatPercentage = (value: string) => {
-    const numbers = value.replace(/\D/g, "")
-    const amount = parseFloat(numbers) / 100
-    return amount.toLocaleString("pt-BR", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })
-  }
-
-  const formatPhone = (value: string) => {
-    const numbers = value.replace(/\D/g, "")
-    if (numbers.length === 11) {
-      // Celular: (00) 00000-0000
-      return numbers.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3")
-    } else if (numbers.length === 10) {
-      // Fixo: (00) 0000-0000
-      return numbers.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3")
-    }
-    return value
-  }
 
   const handleClientChange = async (clientId: string) => {
     if (clientId) {
@@ -194,6 +149,7 @@ export default function NewPaymentGroupPage() {
         monthlyInterestRate,
         firstInstallmentDueDate,
         observation: values.observation || undefined,
+        generateBoletos: values.generateBoletos,
       })
       
       // Success - redirect to payments page
@@ -207,7 +163,8 @@ export default function NewPaymentGroupPage() {
   }
 
   return (
-    <div className="container mx-auto py-10 max-w-3xl">
+    <main className="sm:ml-14 p-4">
+    <div className="max-w-3xl mx-auto py-6">
       <Card>
         <CardHeader>
           <CardTitle>Novo Grupo de Pagamentos</CardTitle>
@@ -285,7 +242,7 @@ export default function NewPaymentGroupPage() {
                           placeholder="000.000.000-00"
                           {...field}
                           onChange={(e) => {
-                            const formatted = formatCPFCNPJ(e.target.value)
+                            const formatted = formatDocumentInput(e.target.value)
                             field.onChange(formatted)
                           }}
                           maxLength={18}
@@ -340,7 +297,7 @@ export default function NewPaymentGroupPage() {
                               className="pl-10"
                               {...field}
                               onChange={(e) => {
-                                const formatted = formatCurrency(e.target.value)
+                                const formatted = formatInputCurrency(e.target.value)
                                 field.onChange(formatted)
                               }}
                             />
@@ -389,7 +346,7 @@ export default function NewPaymentGroupPage() {
                               placeholder="0,00"
                               {...field}
                               onChange={(e) => {
-                                const formatted = formatPercentage(e.target.value)
+                                const formatted = formatInputPercentage(e.target.value)
                                 field.onChange(formatted)
                               }}
                             />
@@ -416,7 +373,7 @@ export default function NewPaymentGroupPage() {
                               placeholder="0,00"
                               {...field}
                               onChange={(e) => {
-                                const formatted = formatPercentage(e.target.value)
+                                const formatted = formatInputPercentage(e.target.value)
                                 field.onChange(formatted)
                               }}
                             />
@@ -498,10 +455,34 @@ export default function NewPaymentGroupPage() {
                   </FormItem>
                 )}
               />
+
+              {/* Generate Boletos */}
+              <FormField
+                control={form.control}
+                name="generateBoletos"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 bg-muted/50">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel className="font-semibold">
+                        Gerar boletos automaticamente
+                      </FormLabel>
+                      <FormDescription>
+                        Ao ativar esta opção, os boletos serão gerados automaticamente para cada parcela através do Banco Inter
+                      </FormDescription>
+                    </div>
+                  </FormItem>
+                )}
+              />
             </form>
           </Form>
         </CardContent>
-        <CardFooter className="flex justify-between">
+        <CardFooter className="flex justify-between border-t p-6">
           <Button
             type="button"
             variant="outline"
@@ -521,5 +502,6 @@ export default function NewPaymentGroupPage() {
         </CardFooter>
       </Card>
     </div>
+    </main>
   )
 }

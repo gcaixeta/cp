@@ -31,39 +31,70 @@ public class UpdatePaymentStatusJob {
 
     @Scheduled(cron = "0 30 2 * * *", zone = "America/Sao_Paulo") 
     public void updatePaymentOverdueValues() {
-    log.info("Starting update of overdue payment values...");
-    int updatedPayments = 0;
-    
-    List<Payment> overduePayments = paymentRepository.findAllOverdueWithGroup();
-    long today = LocalDate.now().toEpochDay();
+        log.info("Starting update of overdue payment values...");
+        int updatedPayments = 0;
+        
+        List<Payment> overduePayments = paymentRepository.findAllOverdueWithGroup();
+        log.info("Found {} overdue payments to process", overduePayments.size());
+        
+        LocalDate today = LocalDate.now();
+        long todayEpoch = today.toEpochDay();
 
-    for (Payment payment : overduePayments) {
-        // if (payment.getOverdueValueDate().isEqual(LocalDate.now())) continue;
+        for (Payment payment : overduePayments) {
+            try {
+                PaymentGroup group = payment.getPaymentGroup();
+                if (group == null) {
+                    log.warn("Payment ID {} has no group, skipping value update", payment.getId());
+                    continue;
+                }
 
-        PaymentGroup group = payment.getPaymentGroup();
-        if (group == null) continue;
+                BigDecimal originalValue = payment.getOriginalValue();
+                long dueDateEpoch = payment.getDueDate().toEpochDay();
+                long daysOverdue = todayEpoch - dueDateEpoch;
 
-        BigDecimal originalValue = payment.getOriginalValue();
-        long dueDate = payment.getDueDate().toEpochDay();
-        long daysOverdue = today - dueDate;
+                if (daysOverdue <= 0) {
+                    continue;
+                }
 
-        if (daysOverdue <= 0) continue;
+                // Garantir que as taxas não são nulas
+                BigDecimal lateFeeRate = group.getLateFeeRate() != null ? group.getLateFeeRate() : BigDecimal.ZERO;
+                BigDecimal monthlyInterestRate = group.getMonthlyInterestRate() != null ? group.getMonthlyInterestRate() : BigDecimal.ZERO;
 
-        BigDecimal lateFee = originalValue.multiply(group.getLateFeeRate());
+                // Cálculo da Multa (fixa sobre o valor original)
+                BigDecimal lateFee = originalValue.multiply(lateFeeRate);
 
-        BigDecimal dailyInterestRate = group.getMonthlyInterestRate()
-                .divide(BigDecimal.valueOf(30), 10, RoundingMode.HALF_UP);
-        BigDecimal totalInterest = originalValue.multiply(dailyInterestRate)
-                .multiply(BigDecimal.valueOf(daysOverdue));
+                // Cálculo dos Juros (proporcional aos dias de atraso)
+                // Juros diário = Taxa Mensal / 30
+                BigDecimal dailyInterestRate = monthlyInterestRate
+                        .divide(BigDecimal.valueOf(30), 10, RoundingMode.HALF_UP);
+                
+                BigDecimal totalInterest = originalValue.multiply(dailyInterestRate)
+                        .multiply(BigDecimal.valueOf(daysOverdue));
 
-        BigDecimal totalToIncrement = lateFee.add(totalInterest);
+                BigDecimal totalToIncrement = lateFee.add(totalInterest);
+                BigDecimal newOverdueValue = originalValue.add(totalToIncrement).setScale(2, RoundingMode.HALF_UP);
 
-        payment.setOverdueValue(originalValue.add(totalToIncrement));
-        payment.setOverdueValueDate(LocalDate.now());
-        updatedPayments++;
+                // Só atualiza se o valor mudou ou se é uma nova data
+                if (payment.getOverdueValue() == null || 
+                    payment.getOverdueValue().compareTo(newOverdueValue) != 0 ||
+                    payment.getOverdueValueDate() == null ||
+                    !payment.getOverdueValueDate().isEqual(today)) {
+                    
+                    payment.setOverdueValue(newOverdueValue);
+                    payment.setOverdueValueDate(today);
+                    updatedPayments++;
+                    
+                    log.debug("Updated Payment ID {}: Original={}, DaysOverdue={}, LateFee={}, Interest={}, NewTotal={}", 
+                        payment.getId(), originalValue, daysOverdue, lateFee, totalInterest, newOverdueValue);
+                }
+            } catch (Exception e) {
+                log.error("Error updating overdue value for payment ID {}: {}", payment.getId(), e.getMessage());
+            }
+        }
+
+        if (updatedPayments > 0) {
+            paymentRepository.saveAll(overduePayments);
+        }
+        log.info("Finished updating values for {} payments.", updatedPayments);
     }
-
-    paymentRepository.saveAll(overduePayments);
-    log.info("Finished updating values for {} payments.", updatedPayments);
-}
 }

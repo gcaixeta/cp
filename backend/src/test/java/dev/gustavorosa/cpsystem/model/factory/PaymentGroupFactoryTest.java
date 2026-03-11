@@ -43,7 +43,7 @@ class PaymentGroupFactoryTest {
 
         CreatePaymentGroupRequest request = new CreatePaymentGroupRequest(
                 1L, "Payer Name", "123456789", "11999999999", BigDecimal.valueOf(100.0), 3,
-                null, null, LocalDate.now().plusDays(1), "Obs"
+                null, null, LocalDate.now().plusDays(1), "Obs", false
         );
 
         List<Payment> payments = paymentGroupFactory.buildPaymentList(group, request);
@@ -66,7 +66,7 @@ class PaymentGroupFactoryTest {
 
         CreatePaymentGroupRequest request = new CreatePaymentGroupRequest(
                 1L, "Payer Name", "123456789", "11999999999", BigDecimal.valueOf(100.0), 2,
-                null, null, yesterday, "Obs"
+                null, null, yesterday, "Obs", false
         );
 
         // First installment is yesterday (OVERDUE), second is tomorrow (PENDING)

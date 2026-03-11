@@ -20,10 +20,11 @@ import {
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ChevronDown, ChevronRight, AlertCircle, Check, Plus } from "lucide-react"
+import { ChevronDown, ChevronRight, AlertCircle, Check, Plus, Banknote } from "lucide-react"
 import { fetchClients, fetchGroupedPayments, markPaymentAsPaid, type Client, type GroupedPaymentResponse } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import { PaymentDetailsDialog } from "@/components/payment-details-dialog"
+import { formatDisplayCurrency } from "@/lib/format"
 
 export default function PaymentsPage() {
   const router = useRouter()
@@ -83,13 +84,6 @@ export default function PaymentsPage() {
     }
   }
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value)
-  }
-
   const formatDate = (dateString: string) => {
     // Parse date as local time to avoid timezone issues
     const [year, month, day] = dateString.split('-')
@@ -131,39 +125,38 @@ export default function PaymentsPage() {
   return (
     <main className="sm:ml-14 p-4">
       <div className="flex flex-col gap-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold text-gray-800">Pagamentos</h1>
-            <Button
-              onClick={() => router.push("/payment-groups/new")}
-              size="sm"
-              className="gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Novo Grupo
-            </Button>
-          </div>
-
-          <div className="w-full sm:w-64">
-            <Select value={selectedClient} onValueChange={setSelectedClient}>
-              <SelectTrigger>
-                <SelectValue placeholder="Todos os Clientes" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os Clientes</SelectItem>
-                {clients.map((client) => (
-                  <SelectItem key={client.id} value={client.id.toString()}>
-                    {client.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-bold text-gray-800">Pagamentos</h1>
+          <Button
+            onClick={() => router.push("/payment-groups/new")}
+            size="sm"
+            className="gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Novo Grupo
+          </Button>
         </div>
 
         <Card>
           <CardHeader className="pb-3">
             <div className="flex flex-wrap gap-4 items-end">
+              <div className="w-48">
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Cliente</label>
+                <Select value={selectedClient} onValueChange={setSelectedClient}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Todos os Clientes" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os Clientes</SelectItem>
+                    {clients.map((client) => (
+                      <SelectItem key={client.id} value={client.id.toString()}>
+                        {client.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="w-40">
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Situação</label>
                 <Select value={selectedStatus} onValueChange={setSelectedStatus}>
@@ -248,8 +241,18 @@ export default function PaymentsPage() {
                     </TableRow>
                   ) : payments.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="h-24 text-center">
-                        Nenhum pagamento encontrado.
+                      <TableCell colSpan={9} className="h-40">
+                        <div className="flex flex-col items-center justify-center gap-4 text-muted-foreground">
+                          <Banknote className="h-12 w-12 opacity-50" />
+                          <div className="text-center">
+                            <p className="font-medium">Nenhum pagamento encontrado</p>
+                            <p className="text-sm">Crie um novo grupo de pagamentos para começar</p>
+                          </div>
+                          <Button className="gap-2" onClick={() => router.push("/payment-groups/new")}>
+                            <Plus className="h-4 w-4" />
+                            Novo Grupo
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -286,14 +289,14 @@ export default function PaymentsPage() {
                           <TableCell>
                             {group.mainPayment.paymentDate ? formatDate(group.mainPayment.paymentDate) : "---"}
                           </TableCell>
-                          <TableCell className="text-right">{formatCurrency(group.mainPayment.originalValue)}</TableCell>
+                          <TableCell className="text-right">{formatDisplayCurrency(group.mainPayment.originalValue)}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex flex-col items-end">
                               <span>
                                 {group.mainPayment.paymentStatus === "PAID_LATE" && group.mainPayment.overdueValue
-                                  ? formatCurrency(group.mainPayment.overdueValue)
+                                  ? formatDisplayCurrency(group.mainPayment.overdueValue)
                                   : group.mainPayment.overdueValue
-                                  ? formatCurrency(group.mainPayment.overdueValue)
+                                  ? formatDisplayCurrency(group.mainPayment.overdueValue)
                                   : "---"}
                               </span>
                               {group.overduePayments.length > 0 && (
@@ -339,13 +342,13 @@ export default function PaymentsPage() {
                             <TableCell className="text-xs">
                               {overdue.paymentDate ? formatDate(overdue.paymentDate) : "---"}
                             </TableCell>
-                            <TableCell className="text-xs text-right">{formatCurrency(overdue.originalValue)}</TableCell>
+                            <TableCell className="text-xs text-right">{formatDisplayCurrency(overdue.originalValue)}</TableCell>
                             <TableCell className="text-xs text-right">
                               <span className={overdue.paymentStatus === "PAID_LATE" ? "font-medium text-yellow-700" : overdue.paymentStatus === "OVERDUE" ? "font-medium text-destructive" : ""}>
                                 {overdue.paymentStatus === "PAID_LATE" && overdue.overdueValue
-                                  ? formatCurrency(overdue.overdueValue)
+                                  ? formatDisplayCurrency(overdue.overdueValue)
                                   : overdue.overdueValue
-                                  ? formatCurrency(overdue.overdueValue)
+                                  ? formatDisplayCurrency(overdue.overdueValue)
                                   : "---"}
                               </span>
                             </TableCell>

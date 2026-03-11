@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { updateClient, deleteClient, type Client } from "@/lib/api"
+import { formatDocument, formatPhone, formatInputPercentage } from "@/lib/format"
 
 interface ClientDetailsDialogProps {
   client: Client
@@ -84,45 +85,6 @@ export function ClientDetailsDialog({ client, onSuccess }: ClientDetailsDialogPr
       })
     }
   }, [open, client, form])
-
-  const formatDocument = (value: string) => {
-    const numbers = value.replace(/\D/g, "")
-    if (numbers.length <= 11) {
-      // CPF: 000.000.000-00
-      return numbers
-        .replace(/(\d{3})(\d)/, "$1.$2")
-        .replace(/(\d{3})(\d)/, "$1.$2")
-        .replace(/(\d{3})(\d{1,2})$/, "$1-$2")
-    } else {
-      // CNPJ: 00.000.000/0000-00
-      return numbers
-        .replace(/(\d{2})(\d)/, "$1.$2")
-        .replace(/(\d{3})(\d)/, "$1.$2")
-        .replace(/(\d{3})(\d)/, "$1/$2")
-        .replace(/(\d{4})(\d{1,2})$/, "$1-$2")
-    }
-  }
-
-  const formatPhone = (value: string) => {
-    const numbers = value.replace(/\D/g, "")
-    if (numbers.length === 11) {
-      // Celular: (00) 00000-0000
-      return numbers.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3")
-    } else if (numbers.length === 10) {
-      // Fixo: (00) 0000-0000
-      return numbers.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3")
-    }
-    return numbers
-  }
-
-  const formatPercentage = (value: string) => {
-    const numbers = value.replace(/\D/g, "")
-    const amount = parseFloat(numbers) / 100
-    return amount.toLocaleString("pt-BR", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })
-  }
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true)
@@ -191,7 +153,7 @@ export function ClientDetailsDialog({ client, onSuccess }: ClientDetailsDialogPr
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-4">
               {/* Dados Básicos */}
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-foreground">Dados Básicos</h3>
+                <h3 className="text-lg font-medium">Dados Básicos</h3>
                 
                 <FormField
                   control={form.control}
@@ -256,7 +218,7 @@ export function ClientDetailsDialog({ client, onSuccess }: ClientDetailsDialogPr
 
               {/* Endereço e Banco */}
               <div className="space-y-4 pt-2">
-                <h3 className="text-sm font-semibold text-foreground">Endereço e Banco</h3>
+                <h3 className="text-lg font-medium">Endereço e Banco</h3>
                 
                 <FormField
                   control={form.control}
@@ -289,7 +251,7 @@ export function ClientDetailsDialog({ client, onSuccess }: ClientDetailsDialogPr
 
               {/* Taxas Padrão */}
               <div className="space-y-4 pt-2">
-                <h3 className="text-sm font-semibold text-foreground">Taxas Padrão</h3>
+                <h3 className="text-lg font-medium">Taxas Padrão</h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
@@ -304,7 +266,7 @@ export function ClientDetailsDialog({ client, onSuccess }: ClientDetailsDialogPr
                               placeholder="0,00"
                               {...field}
                               onChange={(e) => {
-                                const formatted = formatPercentage(e.target.value)
+                                const formatted = formatInputPercentage(e.target.value)
                                 field.onChange(formatted)
                               }}
                             />
@@ -330,7 +292,7 @@ export function ClientDetailsDialog({ client, onSuccess }: ClientDetailsDialogPr
                               placeholder="0,00"
                               {...field}
                               onChange={(e) => {
-                                const formatted = formatPercentage(e.target.value)
+                                const formatted = formatInputPercentage(e.target.value)
                                 field.onChange(formatted)
                               }}
                             />

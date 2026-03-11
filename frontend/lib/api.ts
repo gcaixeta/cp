@@ -152,6 +152,7 @@ export async function createPaymentGroup(data: {
   monthlyInterestRate?: number;
   firstInstallmentDueDate: string; // ISO format YYYY-MM-DD
   observation?: string;
+  generateBoletos?: boolean;
 }): Promise<PaymentGroupData> {
   const response = await fetch(`${API_BASE_URL}/payment-group`, {
     method: 'POST',
@@ -159,6 +160,28 @@ export async function createPaymentGroup(data: {
     body: JSON.stringify(data),
   });
   return handleResponse<PaymentGroupData>(response);
+}
+
+// Boleto related functions
+export interface BoletoResponse {
+  id: number;
+  paymentId: number;
+  bankType: string;
+  bankBoletoId: string | null;
+  barcode: string | null;
+  digitableLine: string | null;
+  pdfUrl: string | null;
+  status: string;
+  errorMessage: string | null;
+  createdAt: string;
+}
+
+export async function fetchBoletoByPaymentId(paymentId: number): Promise<BoletoResponse> {
+  const response = await fetch(`${API_BASE_URL}/boletos/payment/${paymentId}`, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+  return handleResponse<BoletoResponse>(response);
 }
 
 export async function updatePayment(id: number, data: {

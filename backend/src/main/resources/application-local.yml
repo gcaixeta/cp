@@ -20,3 +20,19 @@ auth:
   user:
     email: carol@cpacessoriaecobranca.com
     password: "054058"
+
+# Configuração de Boletos MOCK para desenvolvimento local
+bank:
+  mock:
+    enabled: true  # Ativa estratégia Mock - não requer certificados
+  inter:
+    api:
+      url: https://cdpj.partners.bancointer.com.br
+      oauth-url: https://cdpj.partners.bancointer.com.br/oauth/v2/token
+    client:
+      id: ${INTER_CLIENT_ID:not-needed-in-mock}
+      secret: ${INTER_CLIENT_SECRET:not-needed-in-mock}
+    certificate:
+      path: ${INTER_CERTIFICATE_PATH:}
+      password: ${INTER_CERTIFICATE_PASSWORD:}
+    scopes: "boleto-cobranca.read boleto-cobranca.write"

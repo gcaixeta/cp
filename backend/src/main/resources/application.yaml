@@ -26,3 +26,19 @@ auth:
 # CORS Configuration
 cors:
   allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000,http://localhost}
+
+# Banco Inter Configuration
+bank:
+  mock:
+    enabled: ${BANK_MOCK_ENABLED:false}  # Mock desabilitado por padrão
+  inter:
+    api:
+      url: https://cdpj.partners.bancointer.com.br
+      oauth-url: https://cdpj.partners.bancointer.com.br/oauth/v2/token
+    client:
+      id: ${INTER_CLIENT_ID:}
+      secret: ${INTER_CLIENT_SECRET:}
+    certificate:
+      path: ${INTER_CERTIFICATE_PATH:classpath:certs/inter-cert.p12}
+      password: ${INTER_CERTIFICATE_PASSWORD:}
+    scopes: "boleto-cobranca.read boleto-cobranca.write"

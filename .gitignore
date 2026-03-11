@@ -10,3 +10,9 @@
 
 # Backup Configuration
 .backup-config
+
+# Banco Inter Certificates (Sensitive)
+backend/src/main/resources/certs/*.p12
+backend/src/main/resources/certs/*.pem
+backend/src/main/resources/certs/*.key
+backend/src/main/resources/certs/*.crt

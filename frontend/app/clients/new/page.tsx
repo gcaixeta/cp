@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { createClient } from "@/lib/api"
+import { formatDocument, formatPhone, formatInputPercentage } from "@/lib/format"
 
 const formSchema = z.object({
   clientName: z.string().min(3, "Nome deve ter no mínimo 3 caracteres").max(100, "Nome deve ter no máximo 100 caracteres"),
@@ -53,46 +54,6 @@ export default function NewClientPage() {
       monthlyInterestRate: "",
     },
   })
-
-  const formatDocument = (value: string) => {
-    const numbers = value.replace(/\D/g, "")
-    if (numbers.length <= 11) {
-      // CPF: 000.000.000-00
-      return numbers
-        .replace(/(\d{3})(\d)/, "$1.$2")
-        .replace(/(\d{3})(\d)/, "$1.$2")
-        .replace(/(\d{3})(\d{1,2})$/, "$1-$2")
-    } else {
-      // CNPJ: 00.000.000/0000-00
-      return numbers
-        .replace(/(\d{2})(\d)/, "$1.$2")
-        .replace(/(\d{3})(\d)/, "$1.$2")
-        .replace(/(\d{3})(\d)/, "$1/$2")
-        .replace(/(\d{4})(\d{1,2})$/, "$1-$2")
-    }
-  }
-
-  const formatPhone = (value: string) => {
-    const numbers = value.replace(/\D/g, "")
-    if (numbers.length === 11) {
-      // Celular: (00) 00000-0000
-      return numbers.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3")
-    } else if (numbers.length === 10) {
-      // Fixo: (00) 0000-0000
-      return numbers.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3")
-    }
-    return numbers
-  }
-
-  const formatPercentage = (value: string) => {
-    const numbers = value.replace(/\D/g, "")
-    if (!numbers) return ""
-    const amount = parseFloat(numbers) / 100
-    return amount.toLocaleString("pt-BR", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })
-  }
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true)
@@ -126,7 +87,8 @@ export default function NewClientPage() {
   }
 
   return (
-    <div className="container mx-auto py-10 max-w-3xl">
+    <main className="sm:ml-14 p-4">
+    <div className="max-w-3xl mx-auto py-6">
       <Card>
         <CardHeader>
           <CardTitle>Novo Cliente</CardTitle>
@@ -252,7 +214,7 @@ export default function NewClientPage() {
                               placeholder="0,00"
                               {...field}
                               onChange={(e) => {
-                                const formatted = formatPercentage(e.target.value)
+                                const formatted = formatInputPercentage(e.target.value)
                                 field.onChange(formatted)
                               }}
                             />
@@ -278,7 +240,7 @@ export default function NewClientPage() {
                               placeholder="0,00"
                               {...field}
                               onChange={(e) => {
-                                const formatted = formatPercentage(e.target.value)
+                                const formatted = formatInputPercentage(e.target.value)
                                 field.onChange(formatted)
                               }}
                             />
@@ -314,5 +276,6 @@ export default function NewClientPage() {
         </CardFooter>
       </Card>
     </div>
+    </main>
   )
 }

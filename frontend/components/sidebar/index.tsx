@@ -33,7 +33,7 @@ export function Sidebar() {
                 <Link
                   href="/payments"
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg 
-                  text-muted-foreground trasition-colors hover:text-foreground"
+                  text-muted-foreground transition-colors hover:text-foreground"
                 >
                   <Banknote className="h-5 w-5" />
                   <span className="sr-only">Pagamentos</span>
@@ -47,7 +47,7 @@ export function Sidebar() {
                 <Link
                   href="/clients"
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg 
-                  text-muted-foreground trasition-colors hover:text-foreground"
+                  text-muted-foreground transition-colors hover:text-foreground"
                 >
                   <Users className="h-5 w-5" />
                   <span className="sr-only">Clientes</span>
@@ -61,7 +61,7 @@ export function Sidebar() {
                 <Link
                   href="#"
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg 
-                  text-muted-foreground trasition-colors hover:text-foreground"
+                  text-muted-foreground transition-colors hover:text-foreground"
                 >
                   <FileText className="h-5 w-5" />
                   <span className="sr-only">Relatorios</span>
@@ -80,7 +80,7 @@ export function Sidebar() {
                 <Link
                   href="#"
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg 
-                  text-muted-foreground trasition-colors hover:text-foreground"
+                  text-muted-foreground transition-colors hover:text-foreground"
                 >
                   <Settings className="h-5 w-5" />
                   <span className="sr-only">Configuracoes</span>
@@ -95,7 +95,7 @@ export function Sidebar() {
                 <button
                   onClick={handleLogout}
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg 
-                  text-muted-foreground trasition-colors hover:text-foreground"
+                  text-muted-foreground transition-colors hover:text-foreground"
                 >
                   <LogOut className="h-5 w-5" />
                   <span className="sr-only">Sair</span>
@@ -131,7 +131,7 @@ export function Sidebar() {
 
                 <Link
                   href="/payments"
-                  className="flex items-center gap-4 px-2.5 text-muted-foreground hover: text-foreground"
+                  className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
                 >
                   <Banknote className="h-5 w-5 transition-all" />
                   Pagamentos
@@ -139,7 +139,7 @@ export function Sidebar() {
 
                 <Link
                   href="/clients"
-                  className="flex items-center gap-4 px-2.5 text-muted-foreground hover: text-foreground"
+                  className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
                 >
                   <Users className="h-5 w-5 transition-all" />
                   Clientes
@@ -148,7 +148,7 @@ export function Sidebar() {
 
                 <Link
                   href="#"
-                  className="flex items-center gap-4 px-2.5 text-muted-foreground hover: text-foreground"
+                  className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
                 >
                   <FileText className="h-5 w-5 transition-all" />
                   Relatorios
@@ -157,7 +157,7 @@ export function Sidebar() {
 
                 <Link
                   href="#"
-                  className="flex items-center gap-4 px-2.5 text-muted-foreground hover: text-foreground"
+                  className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
                 >
                   <Settings className="h-5 w-5 transition-all" />
                   Configuracoes
@@ -166,7 +166,7 @@ export function Sidebar() {
 
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-4 px-2.5 text-muted-foreground hover: text-foreground"
+                  className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
                 >
                   <LogOut className="h-5 w-5 transition-all" />
                   Sair

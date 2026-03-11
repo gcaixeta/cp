@@ -15,7 +15,8 @@ public record CreatePaymentGroupRequest(
     BigDecimal lateFeeRate,
     BigDecimal monthlyInterestRate,
     @NotNull(message = "first installment due date must not be null") LocalDate firstInstallmentDueDate,
-    String observation
+    String observation,
+    Boolean generateBoletos
 ) {
 
 }

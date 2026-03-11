@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button"
 import { Plus, Users } from "lucide-react"
 import { fetchAllClients, type Client } from "@/lib/api"
 import { ClientDetailsDialog } from "@/components/client-details-dialog"
+import { formatDisplayDocument, formatDisplayPhone, formatDisplayPercentage } from "@/lib/format"
 
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([])
@@ -34,36 +35,6 @@ export default function ClientsPage() {
     } finally {
       setLoading(false)
     }
-  }
-
-  const formatDocument = (doc: string) => {
-    const numbers = doc.replace(/\D/g, "")
-    if (numbers.length === 11) {
-      // CPF: 000.000.000-00
-      return numbers.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")
-    } else if (numbers.length === 14) {
-      // CNPJ: 00.000.000/0000-00
-      return numbers.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5")
-    }
-    return doc
-  }
-
-  const formatPhone = (phone: string | null) => {
-    if (!phone) return "---"
-    const numbers = phone.replace(/\D/g, "")
-    if (numbers.length === 11) {
-      // Celular: (00) 00000-0000
-      return numbers.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3")
-    } else if (numbers.length === 10) {
-      // Fixo: (00) 0000-0000
-      return numbers.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3")
-    }
-    return phone
-  }
-
-  const formatPercentage = (value: number | null) => {
-    if (!value) return "---"
-    return `${(value * 100).toFixed(2)}%`
   }
 
   return (
@@ -134,11 +105,11 @@ export default function ClientsPage() {
                     clients.map((client) => (
                       <TableRow key={client.id} className="hover:bg-muted/50">
                         <TableCell className="font-medium">{client.name}</TableCell>
-                        <TableCell>{formatDocument(client.document)}</TableCell>
-                        <TableCell>{formatPhone(client.phone)}</TableCell>
+                        <TableCell>{formatDisplayDocument(client.document)}</TableCell>
+                        <TableCell>{formatDisplayPhone(client.phone)}</TableCell>
                         <TableCell>{client.bank || "---"}</TableCell>
-                        <TableCell className="text-center">{formatPercentage(client.lateFeeRate)}</TableCell>
-                        <TableCell className="text-center">{formatPercentage(client.monthlyInterestRate)}</TableCell>
+                        <TableCell className="text-center">{formatDisplayPercentage(client.lateFeeRate)}</TableCell>
+                        <TableCell className="text-center">{formatDisplayPercentage(client.monthlyInterestRate)}</TableCell>
                         <TableCell>
                           <div className="flex items-center justify-end gap-2">
                             <ClientDetailsDialog client={client} onSuccess={loadClients} />
