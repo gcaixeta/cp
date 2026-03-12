@@ -68,6 +68,18 @@ public class JwtTokenProvider {
         return false;
     }
 
+    public String getEmailFromExpiredToken(String token) {
+        try {
+            Jwts.parser()
+                    .verifyWith(getSigningKey())
+                    .build()
+                    .parseSignedClaims(token);
+        } catch (ExpiredJwtException ex) {
+            return ex.getClaims().getSubject();
+        }
+        return null;
+    }
+
     public long getExpirationMs() {
         return jwtExpirationMs;
     }

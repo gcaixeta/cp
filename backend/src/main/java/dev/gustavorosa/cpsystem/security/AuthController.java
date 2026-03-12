@@ -51,4 +51,23 @@ public class AuthController {
         // This endpoint requires authentication, so if we reach here, token is valid
         return ResponseEntity.ok().body(Map.of("valid", true));
     }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refresh(@RequestHeader("Authorization") String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Token não fornecido"));
+        }
+
+        String expiredToken = authHeader.substring(7);
+        String email = tokenProvider.getEmailFromExpiredToken(expiredToken);
+
+        if (email == null || !email.equals(validEmail)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Token inválido para refresh"));
+        }
+
+        String newToken = tokenProvider.generateToken(email);
+        return ResponseEntity.ok(new AuthResponse(newToken, tokenProvider.getExpirationMs()));
+    }
 }

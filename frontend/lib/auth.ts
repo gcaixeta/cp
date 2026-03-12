@@ -66,3 +66,25 @@ export function logout() {
 export function isAuthenticated(): boolean {
   return getAuthToken() !== null;
 }
+
+export async function refreshAuthToken(): Promise<string | null> {
+  const currentToken = getAuthToken();
+  if (!currentToken) return null;
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${currentToken}`,
+      },
+    });
+
+    if (!response.ok) return null;
+
+    const data: LoginResponse = await response.json();
+    setAuthToken(data.token);
+    return data.token;
+  } catch {
+    return null;
+  }
+}
