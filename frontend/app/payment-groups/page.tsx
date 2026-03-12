@@ -33,7 +33,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Plus, ClipboardList, Trash2 } from "lucide-react"
 import { fetchClients, fetchPaymentGroups, deletePaymentGroup, type Client, type PaymentGroupListItem } from "@/lib/api"
-import { formatDisplayCurrency, formatDisplayDocument } from "@/lib/format"
+import { formatDisplayCurrency } from "@/lib/format"
 
 export default function PaymentGroupsPage() {
   const router = useRouter()
@@ -122,14 +122,13 @@ export default function PaymentGroupsPage() {
             <div className="rounded-md border overflow-x-auto">
               <Table className="table-fixed w-full min-w-[1300px]">
                 <colgroup>
-                  <col className="w-[14%]" />
-                  <col className="w-[14%]" />
-                  <col className="w-[11%]" />
-                  <col className="w-[11%]" />
+                  <col className="w-[16%]" />
+                  <col className="w-[16%]" />
+                  <col className="w-[12%]" />
                   <col className="w-[8%]" />
-                  <col className="w-[10%]" />
-                  <col className="w-[10%]" />
-                  <col className="w-[10%]" />
+                  <col className="w-[12%]" />
+                  <col className="w-[12%]" />
+                  <col className="w-[12%]" />
                   <col className="w-[8%]" />
                   <col className="w-[4%]" />
                 </colgroup>
@@ -138,7 +137,6 @@ export default function PaymentGroupsPage() {
                     <TableHead>Pagador</TableHead>
                     <TableHead>Cliente</TableHead>
                     <TableHead>Grupo</TableHead>
-                    <TableHead>Documento Pagador</TableHead>
                     <TableHead className="text-center">Parcelas</TableHead>
                     <TableHead className="text-right">Valor Mensal</TableHead>
                     <TableHead className="text-right">Total Pago</TableHead>
@@ -150,13 +148,13 @@ export default function PaymentGroupsPage() {
                 <TableBody>
                   {loading ? (
                     <TableRow>
-                      <TableCell colSpan={10} className="h-24 text-center">
+                      <TableCell colSpan={9} className="h-24 text-center">
                         Carregando...
                       </TableCell>
                     </TableRow>
                   ) : groups.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={10} className="h-40">
+                      <TableCell colSpan={9} className="h-40">
                         <div className="flex flex-col items-center justify-center gap-4 text-muted-foreground">
                           <ClipboardList className="h-12 w-12 opacity-50" />
                           <div className="text-center">
@@ -176,7 +174,6 @@ export default function PaymentGroupsPage() {
                         <TableCell className="font-medium">{group.payerName || "---"}</TableCell>
                         <TableCell>{group.clientName}</TableCell>
                         <TableCell className="text-muted-foreground text-sm">{group.groupName || `#${group.id}`}</TableCell>
-                        <TableCell>{formatDisplayDocument(group.payerDocument)}</TableCell>
                         <TableCell className="text-center">
                           {group.paidInstallments} / {group.totalInstallments}
                         </TableCell>
