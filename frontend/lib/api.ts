@@ -1,4 +1,4 @@
-import { getAuthToken, logout } from './auth';
+import { getAuthToken, logout, refreshAuthToken } from './auth';
 
 // Em produção (Docker), usa /api/v1 (Nginx remove /api e envia para backend:8080/v1)
 // Em desenvolvimento, usa http://localhost:8080/v1 (acesso direto ao backend sem /api)
@@ -71,12 +71,6 @@ function getAuthHeaders(): HeadersInit {
 
 // Helper function to handle API responses
 async function handleResponse<T>(response: Response): Promise<T> {
-  if (response.status === 401) {
-    // Unauthorized - redirect to login
-    logout();
-    throw new Error('Sessão expirada. Faça login novamente.');
-  }
-
   if (!response.ok) {
     throw new Error(`Request failed with status ${response.status}`);
   }
@@ -101,10 +95,45 @@ async function handleResponse<T>(response: Response): Promise<T> {
   return text as unknown as T;
 }
 
-export async function fetchClients(): Promise<Client[]> {
-  const response = await fetch(`${API_BASE_URL}/client`, {
+// Flag to prevent multiple concurrent refresh attempts
+let isRefreshing = false;
+let refreshPromise: Promise<string | null> | null = null;
+
+// Wrapper that handles 401 with automatic token refresh and retry
+async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
+  const response = await fetch(url, {
+    ...options,
     headers: getAuthHeaders(),
   });
+
+  if (response.status !== 401) {
+    return response;
+  }
+
+  // Avoid multiple concurrent refresh calls
+  if (!isRefreshing) {
+    isRefreshing = true;
+    refreshPromise = refreshAuthToken();
+  }
+
+  const newToken = await refreshPromise;
+  isRefreshing = false;
+  refreshPromise = null;
+
+  if (!newToken) {
+    logout();
+    throw new Error('Sessão expirada. Faça login novamente.');
+  }
+
+  // Retry the original request with new token
+  return fetch(url, {
+    ...options,
+    headers: getAuthHeaders(),
+  });
+}
+
+export async function fetchClients(): Promise<Client[]> {
+  const response = await fetchWithAuth(`${API_BASE_URL}/client`);
   return handleResponse<Client[]>(response);
 }
 
@@ -120,24 +149,19 @@ export async function fetchGroupedPayments(filters: {
   if (filters.month) params.append('month', filters.month.toString());
   if (filters.year) params.append('year', filters.year.toString());
 
-  const response = await fetch(`${API_BASE_URL}/payment?${params.toString()}`, {
-    headers: getAuthHeaders(),
-  });
+  const response = await fetchWithAuth(`${API_BASE_URL}/payment?${params.toString()}`);
   return handleResponse<GroupedPaymentResponse[]>(response);
 }
 
 export async function markPaymentAsPaid(paymentId: number): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/payment/${paymentId}/mark-as-paid`, {
+  const response = await fetchWithAuth(`${API_BASE_URL}/payment/${paymentId}/mark-as-paid`, {
     method: 'PATCH',
-    headers: getAuthHeaders(),
   });
   return handleResponse<void>(response);
 }
 
 export async function fetchClientById(id: number): Promise<Client> {
-  const response = await fetch(`${API_BASE_URL}/client/${id}`, {
-    headers: getAuthHeaders(),
-  });
+  const response = await fetchWithAuth(`${API_BASE_URL}/client/${id}`);
   return handleResponse<Client>(response);
 }
 
@@ -154,9 +178,8 @@ export async function createPaymentGroup(data: {
   observation?: string;
   generateBoletos?: boolean;
 }): Promise<PaymentGroupData> {
-  const response = await fetch(`${API_BASE_URL}/payment-group`, {
+  const response = await fetchWithAuth(`${API_BASE_URL}/payment-group`, {
     method: 'POST',
-    headers: getAuthHeaders(),
     body: JSON.stringify(data),
   });
   return handleResponse<PaymentGroupData>(response);
@@ -177,10 +200,7 @@ export interface BoletoResponse {
 }
 
 export async function fetchBoletoByPaymentId(paymentId: number): Promise<BoletoResponse> {
-  const response = await fetch(`${API_BASE_URL}/boletos/payment/${paymentId}`, {
-    method: 'GET',
-    headers: getAuthHeaders(),
-  });
+  const response = await fetchWithAuth(`${API_BASE_URL}/boletos/payment/${paymentId}`);
   return handleResponse<BoletoResponse>(response);
 }
 
@@ -209,16 +229,13 @@ export async function fetchPaymentGroups(filters?: {
   const params = new URLSearchParams();
   if (filters?.clientId && filters.clientId !== 'all') params.append('clientId', filters.clientId);
 
-  const response = await fetch(`${API_BASE_URL}/payment-group?${params.toString()}`, {
-    headers: getAuthHeaders(),
-  });
+  const response = await fetchWithAuth(`${API_BASE_URL}/payment-group?${params.toString()}`);
   return handleResponse<PaymentGroupListItem[]>(response);
 }
 
 export async function deletePaymentGroup(id: number): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/payment-group/${id}`, {
+  const response = await fetchWithAuth(`${API_BASE_URL}/payment-group/${id}`, {
     method: 'DELETE',
-    headers: getAuthHeaders(),
   });
   return handleResponse<void>(response);
 }
@@ -229,18 +246,15 @@ export async function updatePayment(id: number, data: {
   paymentDate?: string; // ISO format YYYY-MM-DD
   observation?: string;
 }): Promise<PaymentResponse> {
-  const response = await fetch(`${API_BASE_URL}/payment/${id}`, {
+  const response = await fetchWithAuth(`${API_BASE_URL}/payment/${id}`, {
     method: 'PUT',
-    headers: getAuthHeaders(),
     body: JSON.stringify(data),
   });
   return handleResponse<PaymentResponse>(response);
 }
 
 export async function fetchAllClients(): Promise<Client[]> {
-  const response = await fetch(`${API_BASE_URL}/client`, {
-    headers: getAuthHeaders(),
-  });
+  const response = await fetchWithAuth(`${API_BASE_URL}/client`);
   return handleResponse<Client[]>(response);
 }
 
@@ -253,9 +267,8 @@ export async function createClient(data: {
   lateFeeRate?: number;
   monthlyInterestRate?: number;
 }): Promise<Client> {
-  const response = await fetch(`${API_BASE_URL}/client`, {
+  const response = await fetchWithAuth(`${API_BASE_URL}/client`, {
     method: 'POST',
-    headers: getAuthHeaders(),
     body: JSON.stringify(data),
   });
   return handleResponse<Client>(response);
@@ -270,18 +283,16 @@ export async function updateClient(id: number, data: {
   lateFeeRate?: number;
   monthlyInterestRate?: number;
 }): Promise<Client> {
-  const response = await fetch(`${API_BASE_URL}/client/${id}`, {
+  const response = await fetchWithAuth(`${API_BASE_URL}/client/${id}`, {
     method: 'PUT',
-    headers: getAuthHeaders(),
     body: JSON.stringify(data),
   });
   return handleResponse<Client>(response);
 }
 
 export async function deleteClient(id: number): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/client/${id}`, {
+  const response = await fetchWithAuth(`${API_BASE_URL}/client/${id}`, {
     method: 'DELETE',
-    headers: getAuthHeaders(),
   });
   return handleResponse<void>(response);
 }
