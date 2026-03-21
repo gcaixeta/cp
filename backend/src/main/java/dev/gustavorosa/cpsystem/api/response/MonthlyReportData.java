@@ -11,27 +11,17 @@ public record MonthlyReportData(
         int month,
         int year,
         int totalPayments,
-        int paidOnTime,
-        double paidOnTimePercentage,
+        int paidEarly,
+        double paidEarlyPercentage,
+        int paidOnDueDate,
+        double paidOnDueDatePercentage,
         int paidLate,
         double paidLatePercentage,
         int pending,
         int overdue,
         BigDecimal totalReceived,
         BigDecimal totalOutstanding,
-        double averageDaysDifference,
-        List<GroupBreakdown> groupBreakdowns,
+        double averageDaysLate,
         List<Payment> allPayments
 ) {
-    public record GroupBreakdown(
-            Long groupId,
-            String groupName,
-            int totalPayments,
-            int paidOnTime,
-            int paidLate,
-            int pending,
-            int overdue,
-            BigDecimal received,
-            BigDecimal outstanding
-    ) {}
 }

@@ -12,10 +12,20 @@ import dev.gustavorosa.cpsystem.model.Client;
 import dev.gustavorosa.cpsystem.model.Payment;
 import dev.gustavorosa.cpsystem.model.PaymentStatus;
 import lombok.extern.slf4j.Slf4j;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.plot.CategoryPlot;
+import org.jfree.chart.plot.PiePlot;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.renderer.category.BarRenderer;
+import org.jfree.data.category.DefaultCategoryDataset;
+import org.jfree.data.general.DefaultPieDataset;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
+import javax.imageio.ImageIO;
 import java.awt.Color;
+import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
@@ -44,11 +54,12 @@ public class PdfReportGenerator {
     private static final Color BORDER_COLOR = new Color(222, 226, 230);
 
     private static final String[] MONTH_NAMES = {
-            "Janeiro", "Fevereiro", "Marco", "Abril", "Maio", "Junho",
+            "Janeiro", "Fevereiro", "Mar\u00e7o", "Abril", "Maio", "Junho",
             "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
     };
 
     public byte[] generate(MonthlyReportData data) {
+        System.setProperty("java.awt.headless", "true");
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             Document document = new Document(PageSize.A4, 36, 36, 36, 50);
             PdfWriter writer = PdfWriter.getInstance(document, baos);
@@ -58,7 +69,7 @@ public class PdfReportGenerator {
             addHeader(document, data);
             addClientInfo(document, data.client());
             addSummaryCards(document, data);
-            addGroupBreakdownTable(document, data);
+            addCharts(document, data);
             addPaymentsTable(document, data);
 
             document.close();
@@ -70,9 +81,9 @@ public class PdfReportGenerator {
     }
 
     private void addHeader(Document document, MonthlyReportData data) throws DocumentException {
-        PdfPTable headerTable = new PdfPTable(2);
+        PdfPTable headerTable = new PdfPTable(3);
         headerTable.setWidthPercentage(100);
-        headerTable.setWidths(new float[]{1, 2});
+        headerTable.setWidths(new float[]{1, 2, 2});
 
         // Logo
         PdfPCell logoCell = new PdfPCell();
@@ -90,13 +101,22 @@ public class PdfReportGenerator {
         }
         headerTable.addCell(logoCell);
 
+        // Client name
+        PdfPCell clientCell = new PdfPCell();
+        clientCell.setBorder(PdfPCell.NO_BORDER);
+        clientCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        Paragraph clientName = new Paragraph(data.client().getName(), SUBTITLE_FONT);
+        clientName.setAlignment(Element.ALIGN_LEFT);
+        clientCell.addElement(clientName);
+        headerTable.addCell(clientCell);
+
         // Title
         String monthName = MONTH_NAMES[data.month() - 1];
         PdfPCell titleCell = new PdfPCell();
         titleCell.setBorder(PdfPCell.NO_BORDER);
         titleCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
         titleCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        Paragraph title = new Paragraph("Relatorio Mensal", TITLE_FONT);
+        Paragraph title = new Paragraph("Relat\u00f3rio Mensal", TITLE_FONT);
         title.setAlignment(Element.ALIGN_RIGHT);
         Paragraph period = new Paragraph(monthName + " / " + data.year(), SUBTITLE_FONT);
         period.setAlignment(Element.ALIGN_RIGHT);
@@ -121,7 +141,7 @@ public class PdfReportGenerator {
         addInfoRow(infoTable, "Nome", client.getName());
         addInfoRow(infoTable, "CPF/CNPJ", formatDocument(client.getDocument()));
         addInfoRow(infoTable, "Telefone", client.getPhone() != null ? client.getPhone() : "-");
-        addInfoRow(infoTable, "Endereco", client.getAddress());
+        addInfoRow(infoTable, "Endere\u00e7o", client.getAddress());
 
         document.add(infoTable);
         addSeparator(document);
@@ -144,14 +164,23 @@ public class PdfReportGenerator {
         sectionTitle.setSpacingBefore(10);
         document.add(sectionTitle);
 
-        PdfPTable cards = new PdfPTable(3);
+        PdfPTable cards = new PdfPTable(4);
         cards.setWidthPercentage(100);
         cards.setSpacingBefore(8);
-        cards.setWidths(new float[]{1, 1, 1});
+        cards.setWidths(new float[]{1, 1, 1, 1});
 
-        addCard(cards, "Pagos em Dia", data.paidOnTime() + " (" + String.format("%.0f%%", data.paidOnTimePercentage()) + ")", new Color(22, 163, 74));
-        addCard(cards, "Pagos com Atraso", data.paidLate() + " (" + String.format("%.0f%%", data.paidLatePercentage()) + ")", new Color(234, 179, 8));
-        addCard(cards, "Pendentes / Vencidos", data.pending() + " / " + data.overdue(), new Color(239, 68, 68));
+        addCard(cards, "Antecipado",
+                data.paidEarly() + " (" + String.format("%.0f%%", data.paidEarlyPercentage()) + ")",
+                new Color(22, 163, 74));
+        addCard(cards, "Na Data",
+                data.paidOnDueDate() + " (" + String.format("%.0f%%", data.paidOnDueDatePercentage()) + ")",
+                new Color(59, 130, 246));
+        addCard(cards, "Atrasado",
+                data.paidLate() + " (" + String.format("%.0f%%", data.paidLatePercentage()) + ")",
+                new Color(234, 179, 8));
+        addCard(cards, "Pendentes / Vencidos",
+                data.pending() + " / " + data.overdue(),
+                new Color(239, 68, 68));
 
         document.add(cards);
 
@@ -162,10 +191,11 @@ public class PdfReportGenerator {
 
         addCard(financialCards, "Valor Recebido", CURRENCY_FMT.format(data.totalReceived()), new Color(22, 163, 74));
         addCard(financialCards, "Valor em Aberto", CURRENCY_FMT.format(data.totalOutstanding()), new Color(239, 68, 68));
-        String avgDays = data.averageDaysDifference() >= 0
-                ? String.format("%.1f dias de antecedencia", data.averageDaysDifference())
-                : String.format("%.1f dias de atraso", Math.abs(data.averageDaysDifference()));
-        addCard(financialCards, "Media de Pagamento", avgDays, PRIMARY_COLOR);
+
+        String avgDaysText = data.averageDaysLate() > 0
+                ? String.format("%.1f dias", data.averageDaysLate())
+                : "N/A";
+        addCard(financialCards, "M\u00e9dia de Atraso", avgDaysText, PRIMARY_COLOR);
 
         document.add(financialCards);
         addSeparator(document);
@@ -189,39 +219,84 @@ public class PdfReportGenerator {
         table.addCell(cell);
     }
 
-    private void addGroupBreakdownTable(Document document, MonthlyReportData data) throws DocumentException {
-        if (data.groupBreakdowns().isEmpty()) return;
-
-        Paragraph sectionTitle = new Paragraph("Detalhamento por Contrato", SUBTITLE_FONT);
+    private void addCharts(Document document, MonthlyReportData data) throws DocumentException {
+        Paragraph sectionTitle = new Paragraph("Gr\u00e1ficos", SUBTITLE_FONT);
         sectionTitle.setSpacingBefore(10);
         document.add(sectionTitle);
 
-        PdfPTable table = new PdfPTable(7);
-        table.setWidthPercentage(100);
-        table.setSpacingBefore(8);
-        table.setWidths(new float[]{2.5f, 1, 1, 1, 1, 1.5f, 1.5f});
+        try {
+            // Pie chart — payment status distribution
+            DefaultPieDataset<String> pieDataset = new DefaultPieDataset<>();
+            if (data.paidEarly() > 0)     pieDataset.setValue("Antecipado", data.paidEarly());
+            if (data.paidOnDueDate() > 0) pieDataset.setValue("Na Data", data.paidOnDueDate());
+            if (data.paidLate() > 0)      pieDataset.setValue("Atrasado", data.paidLate());
+            if (data.pending() > 0)       pieDataset.setValue("Pendente", data.pending());
+            if (data.overdue() > 0)       pieDataset.setValue("Vencido", data.overdue());
 
-        addTableHeader(table, "Contrato", "Total", "Em Dia", "Atrasado", "Pend/Venc", "Recebido", "Em Aberto");
+            JFreeChart pieChart = ChartFactory.createPieChart(
+                    "Distribui\u00e7\u00e3o de Pagamentos", pieDataset, true, false, false);
+            pieChart.setBackgroundPaint(java.awt.Color.WHITE);
+            PiePlot<?> piePlot = (PiePlot<?>) pieChart.getPlot();
+            piePlot.setBackgroundPaint(java.awt.Color.WHITE);
+            piePlot.setSectionPaint("Antecipado",  new java.awt.Color(22, 163, 74));
+            piePlot.setSectionPaint("Na Data",     new java.awt.Color(59, 130, 246));
+            piePlot.setSectionPaint("Atrasado",    new java.awt.Color(234, 179, 8));
+            piePlot.setSectionPaint("Pendente",    new java.awt.Color(249, 115, 22));
+            piePlot.setSectionPaint("Vencido",     new java.awt.Color(239, 68, 68));
 
-        boolean alternate = false;
-        for (MonthlyReportData.GroupBreakdown gb : data.groupBreakdowns()) {
-            Color bgColor = alternate ? LIGHT_BG : Color.WHITE;
-            addTableCell(table, gb.groupName() != null ? gb.groupName() : "Contrato #" + gb.groupId(), bgColor);
-            addTableCell(table, String.valueOf(gb.totalPayments()), bgColor);
-            addTableCell(table, String.valueOf(gb.paidOnTime()), bgColor);
-            addTableCell(table, String.valueOf(gb.paidLate()), bgColor);
-            addTableCell(table, gb.pending() + "/" + gb.overdue(), bgColor);
-            addTableCell(table, CURRENCY_FMT.format(gb.received()), bgColor);
-            addTableCell(table, CURRENCY_FMT.format(gb.outstanding()), bgColor);
-            alternate = !alternate;
+            // Bar chart — received vs outstanding
+            DefaultCategoryDataset barDataset = new DefaultCategoryDataset();
+            barDataset.addValue(data.totalReceived(), "Recebido", "Valores");
+            barDataset.addValue(data.totalOutstanding(), "Em Aberto", "Valores");
+
+            JFreeChart barChart = ChartFactory.createBarChart(
+                    "Recebido vs Em Aberto", null, "R$",
+                    barDataset, PlotOrientation.HORIZONTAL, true, false, false);
+            barChart.setBackgroundPaint(java.awt.Color.WHITE);
+            CategoryPlot barPlot = barChart.getCategoryPlot();
+            barPlot.setBackgroundPaint(java.awt.Color.WHITE);
+            BarRenderer renderer = (BarRenderer) barPlot.getRenderer();
+            renderer.setSeriesPaint(0, new java.awt.Color(22, 163, 74));
+            renderer.setSeriesPaint(1, new java.awt.Color(239, 68, 68));
+
+            // Embed charts as PNG images in PDF
+            Image pdfPieImage = chartToImage(pieChart, 300, 220);
+            Image pdfBarImage = chartToImage(barChart, 300, 220);
+            pdfPieImage.scaleToFit(240, 180);
+            pdfBarImage.scaleToFit(240, 180);
+
+            PdfPTable chartTable = new PdfPTable(2);
+            chartTable.setWidthPercentage(100);
+            chartTable.setSpacingBefore(8);
+            chartTable.setWidths(new float[]{1, 1});
+
+            PdfPCell pieCell = new PdfPCell(pdfPieImage, true);
+            pieCell.setBorder(PdfPCell.NO_BORDER);
+            pieCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+            chartTable.addCell(pieCell);
+
+            PdfPCell barCell = new PdfPCell(pdfBarImage, true);
+            barCell.setBorder(PdfPCell.NO_BORDER);
+            barCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+            chartTable.addCell(barCell);
+
+            document.add(chartTable);
+        } catch (Exception e) {
+            log.warn("Could not render charts, skipping: {}", e.getMessage());
         }
 
-        document.add(table);
         addSeparator(document);
     }
 
+    private Image chartToImage(JFreeChart chart, int width, int height) throws Exception {
+        BufferedImage bufferedImage = chart.createBufferedImage(width, height);
+        ByteArrayOutputStream imgOs = new ByteArrayOutputStream();
+        ImageIO.write(bufferedImage, "PNG", imgOs);
+        return Image.getInstance(imgOs.toByteArray());
+    }
+
     private void addPaymentsTable(Document document, MonthlyReportData data) throws DocumentException {
-        Paragraph sectionTitle = new Paragraph("Pagamentos do Mes", SUBTITLE_FONT);
+        Paragraph sectionTitle = new Paragraph("Pagamentos do M\u00eas", SUBTITLE_FONT);
         sectionTitle.setSpacingBefore(10);
         document.add(sectionTitle);
 
@@ -230,21 +305,18 @@ public class PdfReportGenerator {
         table.setSpacingBefore(8);
         table.setWidths(new float[]{2.5f, 1, 1.2f, 1.2f, 1.2f, 1.2f, 1.2f});
 
-        addTableHeader(table, "Contrato", "Parcela", "Vencimento", "Pagamento", "Valor", "Valor Corrigido", "Status");
+        addTableHeader(table, "Pagador", "Parcela", "Vencimento", "Pagamento", "Valor", "Valor Corrigido", "Status");
 
         boolean alternate = false;
         for (Payment p : data.allPayments()) {
             Color bgColor = alternate ? LIGHT_BG : Color.WHITE;
-            String groupName = p.getPaymentGroup().getGroupName() != null
-                    ? p.getPaymentGroup().getGroupName()
-                    : "Contrato #" + p.getPaymentGroup().getId();
-            addTableCell(table, groupName, bgColor);
+            addTableCell(table, p.getPayerName(), bgColor);
             addTableCell(table, p.getInstallmentNumber() + "/" + p.getTotalInstallments(), bgColor);
             addTableCell(table, p.getDueDate().format(DATE_FMT), bgColor);
             addTableCell(table, p.getPaymentDate() != null ? p.getPaymentDate().format(DATE_FMT) : "-", bgColor);
             addTableCell(table, CURRENCY_FMT.format(p.getOriginalValue()), bgColor);
             addTableCell(table, p.getOverdueValue() != null ? CURRENCY_FMT.format(p.getOverdueValue()) : "-", bgColor);
-            addTableCell(table, translateStatus(p.getPaymentStatus()), bgColor);
+            addTableCell(table, translatePaymentStatus(p), bgColor);
             alternate = !alternate;
         }
 
@@ -287,10 +359,11 @@ public class PdfReportGenerator {
         document.add(separator);
     }
 
-    private String translateStatus(PaymentStatus status) {
-        return switch (status) {
-            case PAID -> "Pago";
-            case PAID_LATE -> "Pago c/ Atraso";
+    private String translatePaymentStatus(Payment p) {
+        return switch (p.getPaymentStatus()) {
+            case PAID -> (p.getPaymentDate() != null && p.getPaymentDate().isBefore(p.getDueDate()))
+                    ? "Antecipado" : "Na Data";
+            case PAID_LATE -> "Atrasado";
             case PENDING -> "Pendente";
             case OVERDUE -> "Vencido";
             case CANCELED -> "Cancelado";
@@ -323,7 +396,7 @@ public class PdfReportGenerator {
                 dateCell.setPaddingTop(5);
                 footer.addCell(dateCell);
 
-                PdfPCell pageCell = new PdfPCell(new Phrase("Pagina " + writer.getPageNumber(), FOOTER_FONT));
+                PdfPCell pageCell = new PdfPCell(new Phrase("P\u00e1gina " + writer.getPageNumber(), FOOTER_FONT));
                 pageCell.setBorder(PdfPCell.TOP);
                 pageCell.setBorderColorTop(BORDER_COLOR);
                 pageCell.setHorizontalAlignment(Element.ALIGN_RIGHT);

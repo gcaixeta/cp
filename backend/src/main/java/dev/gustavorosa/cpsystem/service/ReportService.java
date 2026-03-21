@@ -14,7 +14,6 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -52,14 +51,21 @@ public class ReportService {
                                                List<Payment> dueInMonth, List<Payment> paidInMonth) {
         int total = dueInMonth.size();
 
-        int paidOnTime = 0;
+        int paidEarly = 0;
+        int paidOnDueDate = 0;
         int paidLate = 0;
         int pending = 0;
         int overdue = 0;
 
         for (Payment p : dueInMonth) {
             switch (p.getPaymentStatus()) {
-                case PAID -> paidOnTime++;
+                case PAID -> {
+                    if (p.getPaymentDate() != null && p.getPaymentDate().isBefore(p.getDueDate())) {
+                        paidEarly++;
+                    } else {
+                        paidOnDueDate++;
+                    }
+                }
                 case PAID_LATE -> paidLate++;
                 case PENDING -> pending++;
                 case OVERDUE -> overdue++;
@@ -67,7 +73,8 @@ public class ReportService {
             }
         }
 
-        double paidOnTimePct = total > 0 ? (paidOnTime * 100.0) / total : 0;
+        double paidEarlyPct = total > 0 ? (paidEarly * 100.0) / total : 0;
+        double paidOnDueDatePct = total > 0 ? (paidOnDueDate * 100.0) / total : 0;
         double paidLatePct = total > 0 ? (paidLate * 100.0) / total : 0;
 
         // Total received = sum of originalValue (or overdueValue if PAID_LATE) for payments paid in the month
@@ -91,72 +98,16 @@ public class ReportService {
                 })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // Average days difference (positive = early, negative = late)
-        List<Payment> paidPayments = dueInMonth.stream()
-                .filter(p -> p.getPaymentStatus() == PaymentStatus.PAID || p.getPaymentStatus() == PaymentStatus.PAID_LATE)
+        // Average days late for PAID_LATE payments only (positive = days overdue)
+        List<Payment> latePaidPayments = dueInMonth.stream()
+                .filter(p -> p.getPaymentStatus() == PaymentStatus.PAID_LATE)
                 .filter(p -> p.getPaymentDate() != null)
                 .toList();
 
-        double avgDays = 0;
-        if (!paidPayments.isEmpty()) {
-            long totalDaysDiff = paidPayments.stream()
-                    .mapToLong(p -> ChronoUnit.DAYS.between(p.getPaymentDate(), p.getDueDate()))
-                    .sum();
-            avgDays = (double) totalDaysDiff / paidPayments.size();
-        }
-
-        // Group breakdowns
-        Map<Long, List<Payment>> byGroup = dueInMonth.stream()
-                .collect(Collectors.groupingBy(p -> p.getPaymentGroup().getId()));
-
-        // Also collect paid-in-month payments by group for received calculation
-        Map<Long, List<Payment>> paidByGroup = paidInMonth.stream()
-                .collect(Collectors.groupingBy(p -> p.getPaymentGroup().getId()));
-
-        List<MonthlyReportData.GroupBreakdown> breakdowns = byGroup.entrySet().stream()
-                .sorted(Comparator.comparing(Map.Entry::getKey))
-                .map(entry -> {
-                    Long groupId = entry.getKey();
-                    List<Payment> payments = entry.getValue();
-                    String groupName = payments.getFirst().getPaymentGroup().getGroupName();
-
-                    int gPaidOnTime = 0, gPaidLate = 0, gPending = 0, gOverdue = 0;
-                    for (Payment p : payments) {
-                        switch (p.getPaymentStatus()) {
-                            case PAID -> gPaidOnTime++;
-                            case PAID_LATE -> gPaidLate++;
-                            case PENDING -> gPending++;
-                            case OVERDUE -> gOverdue++;
-                            default -> {}
-                        }
-                    }
-
-                    BigDecimal gReceived = paidByGroup.getOrDefault(groupId, List.of()).stream()
-                            .map(p -> {
-                                if (p.getPaymentStatus() == PaymentStatus.PAID_LATE && p.getOverdueValue() != null) {
-                                    return p.getOverdueValue();
-                                }
-                                return p.getOriginalValue();
-                            })
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-                    BigDecimal gOutstanding = payments.stream()
-                            .filter(p -> p.getPaymentStatus() == PaymentStatus.PENDING || p.getPaymentStatus() == PaymentStatus.OVERDUE)
-                            .map(p -> {
-                                if (p.getPaymentStatus() == PaymentStatus.OVERDUE && p.getOverdueValue() != null) {
-                                    return p.getOverdueValue();
-                                }
-                                return p.getOriginalValue();
-                            })
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-                    return new MonthlyReportData.GroupBreakdown(
-                            groupId, groupName, payments.size(),
-                            gPaidOnTime, gPaidLate, gPending, gOverdue,
-                            gReceived, gOutstanding
-                    );
-                })
-                .toList();
+        double avgDaysLate = latePaidPayments.isEmpty() ? 0.0 :
+                latePaidPayments.stream()
+                        .mapToLong(p -> ChronoUnit.DAYS.between(p.getDueDate(), p.getPaymentDate()))
+                        .average().orElse(0.0);
 
         // Sort all payments by due date for the table
         List<Payment> sortedPayments = dueInMonth.stream()
@@ -165,11 +116,12 @@ public class ReportService {
 
         return new MonthlyReportData(
                 client, month, year, total,
-                paidOnTime, paidOnTimePct,
+                paidEarly, paidEarlyPct,
+                paidOnDueDate, paidOnDueDatePct,
                 paidLate, paidLatePct,
                 pending, overdue,
                 totalReceived, totalOutstanding,
-                avgDays, breakdowns, sortedPayments
+                avgDaysLate, sortedPayments
         );
     }
 }
