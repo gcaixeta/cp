@@ -43,6 +43,20 @@ export function setAuthToken(token: string) {
   }
 }
 
+export function setAuthTokenWithExpiry(token: string, expiresIn: number) {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('auth_token', token);
+    localStorage.setItem('auth_token_expiry', String(Date.now() + expiresIn));
+  }
+}
+
+export function isTokenExpired(): boolean {
+  if (typeof window === 'undefined') return false;
+  const expiry = localStorage.getItem('auth_token_expiry');
+  if (!expiry) return false;
+  return Date.now() > Number(expiry);
+}
+
 export function getAuthToken(): string | null {
   if (typeof window !== 'undefined') {
     return localStorage.getItem('auth_token');
@@ -53,6 +67,7 @@ export function getAuthToken(): string | null {
 export function removeAuthToken() {
   if (typeof window !== 'undefined') {
     localStorage.removeItem('auth_token');
+    localStorage.removeItem('auth_token_expiry');
   }
 }
 
@@ -64,7 +79,7 @@ export function logout() {
 }
 
 export function isAuthenticated(): boolean {
-  return getAuthToken() !== null;
+  return getAuthToken() !== null && !isTokenExpired();
 }
 
 export async function refreshAuthToken(): Promise<string | null> {
@@ -82,7 +97,7 @@ export async function refreshAuthToken(): Promise<string | null> {
     if (!response.ok) return null;
 
     const data: LoginResponse = await response.json();
-    setAuthToken(data.token);
+    setAuthTokenWithExpiry(data.token, data.expiresIn);
     return data.token;
   } catch {
     return null;

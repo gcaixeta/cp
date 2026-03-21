@@ -22,7 +22,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { login, setAuthToken } from "@/lib/auth";
+import { login, setAuthTokenWithExpiry } from "@/lib/auth";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Email inválido" }),
@@ -50,7 +50,7 @@ export default function LoginPage() {
 
     try {
       const response = await login(values.email, values.password);
-      setAuthToken(response.token);
+      setAuthTokenWithExpiry(response.token, response.expiresIn);
       router.push("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao fazer login");

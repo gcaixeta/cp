@@ -22,6 +22,17 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     } else {
       setIsChecking(false);
     }
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && !isAuthenticated()) {
+        router.push("/login");
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [pathname, router]);
 
   // Show loading or nothing while checking
