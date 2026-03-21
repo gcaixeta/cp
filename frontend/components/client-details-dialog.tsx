@@ -88,16 +88,16 @@ export function ClientDetailsDialog({ client, onSuccess }: ClientDetailsDialogPr
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true)
-    
+
     try {
       const lateFeeRate = values.lateFeeRate
         ? parseFloat(values.lateFeeRate.replace(",", ".")) / 100
         : undefined
-      
+
       const monthlyInterestRate = values.monthlyInterestRate
         ? parseFloat(values.monthlyInterestRate.replace(",", ".")) / 100
         : undefined
-      
+
       await updateClient(client.id, {
         clientName: values.clientName,
         document: values.document.replace(/\D/g, ""),
@@ -107,7 +107,7 @@ export function ClientDetailsDialog({ client, onSuccess }: ClientDetailsDialogPr
         lateFeeRate,
         monthlyInterestRate,
       })
-      
+
       setOpen(false)
       onSuccess()
     } catch (error) {
@@ -141,20 +141,20 @@ export function ClientDetailsDialog({ client, onSuccess }: ClientDetailsDialogPr
             <PencilIcon className="h-4 w-4" />
           </Button>
         </DialogTrigger>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="min-w-3xl max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Detalhes do Cliente</DialogTitle>
             <DialogDescription>
               Visualize e edite as informações do cliente
             </DialogDescription>
           </DialogHeader>
-          
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-4">
               {/* Dados Básicos */}
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Dados Básicos</h3>
-                
+
                 <FormField
                   control={form.control}
                   name="clientName"
@@ -219,7 +219,7 @@ export function ClientDetailsDialog({ client, onSuccess }: ClientDetailsDialogPr
               {/* Endereço e Banco */}
               <div className="space-y-4 pt-2">
                 <h3 className="text-lg font-medium">Endereço e Banco</h3>
-                
+
                 <FormField
                   control={form.control}
                   name="address"
@@ -252,7 +252,7 @@ export function ClientDetailsDialog({ client, onSuccess }: ClientDetailsDialogPr
               {/* Taxas Padrão */}
               <div className="space-y-4 pt-2">
                 <h3 className="text-lg font-medium">Taxas Padrão</h3>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}

@@ -140,7 +140,7 @@ export function PaymentDetailsDialog({ payment, onSuccess }: PaymentDetailsDialo
           <PencilIcon className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="min-w-3xl max-w-3xl">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div>
