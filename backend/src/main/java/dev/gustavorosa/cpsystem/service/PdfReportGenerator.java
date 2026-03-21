@@ -79,7 +79,7 @@ public class PdfReportGenerator {
         logoCell.setBorder(PdfPCell.NO_BORDER);
         logoCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
         try {
-            ClassPathResource logoResource = new ClassPathResource("static/logo.png");
+            ClassPathResource logoResource = new ClassPathResource("static/logo.JPG");
             if (logoResource.exists()) {
                 Image logo = Image.getInstance(logoResource.getURL());
                 logo.scaleToFit(80, 80);
