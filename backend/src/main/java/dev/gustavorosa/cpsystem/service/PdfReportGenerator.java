@@ -70,7 +70,6 @@ public class PdfReportGenerator {
             document.open();
 
             addHeader(document, data);
-            addClientInfo(document, data.client());
             addSummaryCards(document, data);
             addCharts(document, data);
             addPaymentsTable(document, data);
@@ -128,25 +127,6 @@ public class PdfReportGenerator {
         headerTable.addCell(titleCell);
 
         document.add(headerTable);
-        addSeparator(document);
-    }
-
-    private void addClientInfo(Document document, Client client) throws DocumentException {
-        Paragraph sectionTitle = new Paragraph("Dados do Cliente", SUBTITLE_FONT);
-        sectionTitle.setSpacingBefore(10);
-        document.add(sectionTitle);
-
-        PdfPTable infoTable = new PdfPTable(2);
-        infoTable.setWidthPercentage(100);
-        infoTable.setSpacingBefore(5);
-        infoTable.setWidths(new float[]{1, 1});
-
-        addInfoRow(infoTable, "Nome", client.getName());
-        addInfoRow(infoTable, "CPF/CNPJ", formatDocument(client.getDocument()));
-        addInfoRow(infoTable, "Telefone", client.getPhone() != null ? client.getPhone() : "-");
-        addInfoRow(infoTable, "Endere\u00e7o", client.getAddress());
-
-        document.add(infoTable);
         addSeparator(document);
     }
 
