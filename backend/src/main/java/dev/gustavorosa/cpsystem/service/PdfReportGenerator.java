@@ -14,6 +14,9 @@ import dev.gustavorosa.cpsystem.model.PaymentStatus;
 import lombok.extern.slf4j.Slf4j;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.block.BlockBorder;
+import org.jfree.chart.labels.StandardPieSectionLabelGenerator;
 import org.jfree.chart.plot.CategoryPlot;
 import org.jfree.chart.plot.PiePlot;
 import org.jfree.chart.plot.PlotOrientation;
@@ -243,6 +246,19 @@ public class PdfReportGenerator {
             piePlot.setSectionPaint("Atrasado",    new java.awt.Color(234, 179, 8));
             piePlot.setSectionPaint("Pendente",    new java.awt.Color(249, 115, 22));
             piePlot.setSectionPaint("Vencido",     new java.awt.Color(239, 68, 68));
+            pieChart.setTitle((org.jfree.chart.title.TextTitle) null);
+            piePlot.setOutlineVisible(false);
+            piePlot.setShadowPaint(null);
+            piePlot.setLabelBackgroundPaint(java.awt.Color.WHITE);
+            piePlot.setLabelShadowPaint(null);
+            piePlot.setLabelOutlinePaint(null);
+            piePlot.setLabelFont(new java.awt.Font("SansSerif", java.awt.Font.PLAIN, 11));
+            piePlot.setLabelGenerator(new StandardPieSectionLabelGenerator("{0}\n{2}"));
+            piePlot.setInteriorGap(0.05);
+            piePlot.setLabelGap(0.02);
+            if (pieChart.getLegend() != null) {
+                pieChart.getLegend().setFrame(new BlockBorder(java.awt.Color.WHITE));
+            }
 
             // Bar chart — received vs outstanding
             DefaultCategoryDataset barDataset = new DefaultCategoryDataset();
@@ -258,12 +274,28 @@ public class PdfReportGenerator {
             BarRenderer renderer = (BarRenderer) barPlot.getRenderer();
             renderer.setSeriesPaint(0, new java.awt.Color(22, 163, 74));
             renderer.setSeriesPaint(1, new java.awt.Color(239, 68, 68));
+            barChart.setTitle((org.jfree.chart.title.TextTitle) null);
+            renderer.setDrawBarOutline(false);
+            renderer.setShadowVisible(false);
+            renderer.setMaximumBarWidth(0.4);
+            barPlot.setOutlineVisible(false);
+            barPlot.setRangeGridlinesVisible(true);
+            barPlot.setRangeGridlinePaint(new java.awt.Color(220, 220, 220));
+            barPlot.getDomainAxis().setVisible(false);
+            java.awt.Font axisFont = new java.awt.Font("SansSerif", java.awt.Font.PLAIN, 10);
+            barPlot.getRangeAxis().setLabelFont(axisFont);
+            barPlot.getRangeAxis().setTickLabelFont(axisFont);
+            NumberAxis rangeAxis = (NumberAxis) barPlot.getRangeAxis();
+            rangeAxis.setNumberFormatOverride(NumberFormat.getCurrencyInstance(PT_BR));
+            if (barChart.getLegend() != null) {
+                barChart.getLegend().setFrame(new BlockBorder(java.awt.Color.WHITE));
+            }
 
             // Embed charts as PNG images in PDF
-            Image pdfPieImage = chartToImage(pieChart, 300, 220);
-            Image pdfBarImage = chartToImage(barChart, 300, 220);
-            pdfPieImage.scaleToFit(240, 180);
-            pdfBarImage.scaleToFit(240, 180);
+            Image pdfPieImage = chartToImage(pieChart, 600, 440);
+            Image pdfBarImage = chartToImage(barChart, 600, 440);
+            pdfPieImage.scaleToFit(260, 195);
+            pdfBarImage.scaleToFit(260, 195);
 
             PdfPTable chartTable = new PdfPTable(2);
             chartTable.setWidthPercentage(100);
