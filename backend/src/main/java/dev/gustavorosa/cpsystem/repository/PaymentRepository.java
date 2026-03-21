@@ -48,4 +48,16 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @Query(value = "SELECT * FROM payments p WHERE (CAST(:clientId AS TEXT) IS NULL OR p.client_id = :clientId) " +
            "AND p.payment_status = 'OVERDUE'", nativeQuery = true)
     List<Payment> findOverduePayments(@org.springframework.data.repository.query.Param("clientId") Long clientId);
+
+    @Query("SELECT p FROM Payment p JOIN FETCH p.paymentGroup WHERE p.client.id = :clientId AND p.dueDate BETWEEN :startDate AND :endDate")
+    List<Payment> findByClientIdAndDueDateBetween(
+            @org.springframework.data.repository.query.Param("clientId") Long clientId,
+            @org.springframework.data.repository.query.Param("startDate") LocalDate startDate,
+            @org.springframework.data.repository.query.Param("endDate") LocalDate endDate);
+
+    @Query("SELECT p FROM Payment p JOIN FETCH p.paymentGroup WHERE p.client.id = :clientId AND p.paymentDate BETWEEN :startDate AND :endDate")
+    List<Payment> findByClientIdAndPaymentDateBetween(
+            @org.springframework.data.repository.query.Param("clientId") Long clientId,
+            @org.springframework.data.repository.query.Param("startDate") LocalDate startDate,
+            @org.springframework.data.repository.query.Param("endDate") LocalDate endDate);
 }

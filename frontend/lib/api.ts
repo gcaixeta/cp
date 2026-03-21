@@ -296,3 +296,13 @@ export async function deleteClient(id: number): Promise<void> {
   });
   return handleResponse<void>(response);
 }
+
+export async function downloadMonthlyReport(clientId: number, month: number, year: number): Promise<Blob> {
+  const response = await fetchWithAuth(
+    `${API_BASE_URL}/report/client/${clientId}/monthly?month=${month}&year=${year}`
+  );
+  if (!response.ok) {
+    throw new Error(`Failed to generate report: ${response.status}`);
+  }
+  return response.blob();
+}

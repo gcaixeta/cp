@@ -73,7 +73,7 @@ export function Sidebar() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Link
-                  href="#"
+                  href="/reports"
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg
                   text-muted-foreground transition-colors hover:text-foreground"
                 >
@@ -169,7 +169,7 @@ export function Sidebar() {
                 </Link>
 
                 <Link
-                  href="#"
+                  href="/reports"
                   className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
                 >
                   <FileText className="h-5 w-5 transition-all" />

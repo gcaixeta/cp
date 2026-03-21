@@ -74,6 +74,12 @@
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-security</artifactId>
 	</dependency>
+	<!-- PDF Generation -->
+	<dependency>
+		<groupId>com.github.librepdf</groupId>
+		<artifactId>openpdf</artifactId>
+		<version>2.0.3</version>
+	</dependency>
 	<!-- JWT Dependencies -->
 	<dependency>
 		<groupId>io.jsonwebtoken</groupId>
