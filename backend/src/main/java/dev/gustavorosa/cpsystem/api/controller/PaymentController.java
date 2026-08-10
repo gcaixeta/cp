@@ -51,4 +51,12 @@ public class PaymentController {
         log.info("[Exit - PaymentController.markAsPaid] - Payment marked as paid successfully: {}", updatedPayment);
         return updatedPayment;
     }
+
+    @PatchMapping("/{id}/revert-to-pending")
+    public PaymentResponse revertToPending(@PathVariable Long id) {
+        log.info("[Entry - PaymentController.revertToPending] - Reverting payment {} to pending", id);
+        PaymentResponse updatedPayment = paymentService.revertToPending(id);
+        log.info("[Exit - PaymentController.revertToPending] - Payment reverted to pending: {}", updatedPayment);
+        return updatedPayment;
+    }
 }

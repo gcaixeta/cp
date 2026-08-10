@@ -160,6 +160,13 @@ export async function markPaymentAsPaid(paymentId: number): Promise<void> {
   return handleResponse<void>(response);
 }
 
+export async function revertPaymentToPending(paymentId: number): Promise<void> {
+  const response = await fetchWithAuth(`${API_BASE_URL}/payment/${paymentId}/revert-to-pending`, {
+    method: 'PATCH',
+  });
+  return handleResponse<void>(response);
+}
+
 export async function fetchClientById(id: number): Promise<Client> {
   const response = await fetchWithAuth(`${API_BASE_URL}/client/${id}`);
   return handleResponse<Client>(response);

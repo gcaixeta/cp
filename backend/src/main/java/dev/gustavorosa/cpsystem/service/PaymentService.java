@@ -132,6 +132,18 @@ public class PaymentService {
         return paymentRepository.save(payment).toResponse();
     }
 
+    public PaymentResponse revertToPending(Long id) {
+        Payment payment = paymentRepository.findById(id)
+                .orElseThrow(() -> new PaymentNotFoundException("Payment with id " + id + " not found"));
+
+        payment.setPaymentDate(null);
+
+        updateStatus(payment);
+        recalculateOverdueValue(payment);
+
+        return paymentRepository.save(payment).toResponse();
+    }
+
     private void recalculateOverdueValue(Payment payment) {
         PaymentGroup group = payment.getPaymentGroup();
         if (group == null) {

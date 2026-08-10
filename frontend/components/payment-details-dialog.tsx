@@ -33,7 +33,18 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { Badge } from "@/components/ui/badge"
-import { updatePayment, type PaymentResponse } from "@/lib/api"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { updatePayment, revertPaymentToPending, type PaymentResponse } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import { formatInputCurrency, formatDisplayPhone, formatDisplayCurrency } from "@/lib/format"
 
@@ -52,6 +63,7 @@ const formSchema = z.object({
 export function PaymentDetailsDialog({ payment, onSuccess }: PaymentDetailsDialogProps) {
   const [open, setOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isReverting, setIsReverting] = useState(false)
   const [dueDatePickerOpen, setDueDatePickerOpen] = useState(false)
   const [paymentDatePickerOpen, setPaymentDatePickerOpen] = useState(false)
 
@@ -130,6 +142,20 @@ export function PaymentDetailsDialog({ payment, onSuccess }: PaymentDetailsDialo
       alert("Erro ao atualizar pagamento. Por favor, tente novamente.")
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const handleRevertToPending = async () => {
+    setIsReverting(true)
+    try {
+      await revertPaymentToPending(payment.id)
+      setOpen(false)
+      onSuccess()
+    } catch (error) {
+      console.error("Failed to revert payment:", error)
+      alert("Erro ao desfazer pagamento. Por favor, tente novamente.")
+    } finally {
+      setIsReverting(false)
     }
   }
 
@@ -290,23 +316,52 @@ export function PaymentDetailsDialog({ payment, onSuccess }: PaymentDetailsDialo
           </form>
         </Form>
 
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setOpen(false)}
-            disabled={isSubmitting}
-          >
-            Cancelar
-          </Button>
-          <Button
-            type="submit"
-            onClick={form.handleSubmit(onSubmit)}
-            disabled={isSubmitting}
-          >
-            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isSubmitting ? "Salvando..." : "Salvar Alterações"}
-          </Button>
+        <DialogFooter className="flex justify-between sm:justify-between">
+          <div>
+            {(payment.paymentStatus === "PAID" || payment.paymentStatus === "PAID_LATE") && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button type="button" variant="destructive" disabled={isSubmitting || isReverting}>
+                    {isReverting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Desfazer Pagamento
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Desfazer pagamento?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Esta ação irá remover a data de recebimento e reverter o status do pagamento.
+                      Tem certeza que deseja continuar?
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleRevertToPending}>
+                      Confirmar
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+              disabled={isSubmitting}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              onClick={form.handleSubmit(onSubmit)}
+              disabled={isSubmitting}
+            >
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isSubmitting ? "Salvando..." : "Salvar Alterações"}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
