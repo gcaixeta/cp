@@ -3,8 +3,8 @@
 # Instalar em: /etc/letsencrypt/renewal-hooks/deploy/cp-nginx.sh
 set -e
 
-PROJECT_DIR="/home/gustavorosa/projects/cp"
-DOMAIN="cpacessoriaecobranca.com.br"
+PROJECT_DIR="/home/gstv/cp"
+DOMAIN="cpassessoriaecobranca.com"
 LETSENCRYPT_DIR="/etc/letsencrypt/live/${DOMAIN}"
 SSL_DIR="${PROJECT_DIR}/nginx/ssl"
 

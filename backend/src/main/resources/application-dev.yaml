@@ -10,5 +10,5 @@ jwt:
 # Authentication Configuration (Development)
 auth:
   user:
-    email: carol@cpacessoriaecobranca.com
+    email: carol@cpassessoriaecobranca.com
     password: "054058"

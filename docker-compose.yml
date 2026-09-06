@@ -34,7 +34,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-139150}
       SPRING_JPA_SHOW_SQL: ${SPRING_JPA_SHOW_SQL:-false}
       JAVA_OPTS: ${JAVA_OPTS:--Xmx512m -Xms256m}
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://cpacessoriaecobranca.com.br,https://www.cpacessoriaecobranca.com.br,http://localhost:3000,http://localhost}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://cpassessoriaecobranca.com,https://www.cpassessoriaecobranca.com,http://localhost:3000,http://localhost}
       # Authentication variables
       AUTH_USER_EMAIL: ${AUTH_USER_EMAIL:-admin@example.com}
       AUTH_USER_PASSWORD: ${AUTH_USER_PASSWORD:-admin123}

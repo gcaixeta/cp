@@ -18,7 +18,7 @@ jwt:
 # Authentication Configuration (Local Development)
 auth:
   user:
-    email: carol@cpacessoriaecobranca.com
+    email: carol@cpassessoriaecobranca.com
     password: "054058"
 
 # Configuração de Boletos MOCK para desenvolvimento local
