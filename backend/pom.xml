@@ -74,6 +74,12 @@
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-security</artifactId>
 	</dependency>
+	<!-- Structured JSON logging (for Loki/Grafana) -->
+	<dependency>
+		<groupId>net.logstash.logback</groupId>
+		<artifactId>logstash-logback-encoder</artifactId>
+		<version>7.4</version>
+	</dependency>
 	<!-- PDF Generation -->
 	<dependency>
 		<groupId>com.github.librepdf</groupId>
