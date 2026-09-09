@@ -20,7 +20,8 @@ echo -e "${YELLOW}=== Copiando Certificados SSL ===${NC}"
 echo ""
 
 # Verificar se o diretório do Let's Encrypt existe
-if [ ! -d "$LETSENCRYPT_DIR" ]; then
+# (usa sudo pois /etc/letsencrypt/live é acessível apenas por root)
+if ! sudo test -d "$LETSENCRYPT_DIR"; then
     echo -e "${RED}Erro: Diretório do Let's Encrypt não encontrado: $LETSENCRYPT_DIR${NC}"
     echo "Certifique-se de que os certificados estão instalados corretamente."
     exit 1

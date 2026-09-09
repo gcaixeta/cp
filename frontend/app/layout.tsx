@@ -4,6 +4,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 
 import { AuthLayoutWrapper } from "@/components/auth-layout-wrapper";
+import { ClientErrorListener } from "@/components/client-error-listener";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,6 +28,7 @@ export default function RootLayout({
           "min-h-screen bg-background font-sans antialiased",
           geistSans.className
         )}>
+        <ClientErrorListener />
         <AuthLayoutWrapper>{children}</AuthLayoutWrapper>
       </body>
     </html>

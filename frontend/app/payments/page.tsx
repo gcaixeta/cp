@@ -1,7 +1,16 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
+import {
+  useReactTable,
+  getCoreRowModel,
+  getSortedRowModel,
+  getExpandedRowModel,
+  flexRender,
+  type SortingState,
+  type ExpandedState,
+} from "@tanstack/react-table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Table,
@@ -18,20 +27,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ChevronDown, ChevronRight, AlertCircle, Check, Plus, Banknote } from "lucide-react"
+import { Plus, Banknote } from "lucide-react"
 import { fetchClients, fetchGroupedPayments, markPaymentAsPaid, type Client, type GroupedPaymentResponse } from "@/lib/api"
 import { cn } from "@/lib/utils"
-import { PaymentDetailsDialog } from "@/components/payment-details-dialog"
-import { formatDisplayCurrency } from "@/lib/format"
+import { getPaymentColumns, type PaymentRow } from "./columns"
 
 export default function PaymentsPage() {
   const router = useRouter()
   const [clients, setClients] = useState<Client[]>([])
   const [payments, setPayments] = useState<GroupedPaymentResponse[]>([])
   const [loading, setLoading] = useState(true)
-  const [expandedRows, setExpandedRows] = useState<Record<number, boolean>>({})
+  const [sorting, setSorting] = useState<SortingState>([])
+  const [expanded, setExpanded] = useState<ExpandedState>({})
 
   // Filters
   const [selectedClient, setSelectedClient] = useState<string>("all")
@@ -55,10 +63,6 @@ export default function PaymentsPage() {
       .catch(console.error)
       .finally(() => setLoading(false))
   }, [selectedClient, selectedStatus, selectedMonth, selectedYear])
-
-  const toggleRow = (id: number) => {
-    setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }))
-  }
 
   const refreshPayments = async () => {
     try {
@@ -84,26 +88,25 @@ export default function PaymentsPage() {
     }
   }
 
-  const formatDate = (dateString: string) => {
-    // Parse date as local time to avoid timezone issues
-    const [year, month, day] = dateString.split('-')
-    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
-    return date.toLocaleDateString("pt-BR")
-  }
+  const data: PaymentRow[] = useMemo(
+    () => payments.map((group) => ({ ...group.mainPayment, subRows: group.overduePayments })),
+    [payments]
+  )
 
-  const getStatusBadge = (status: string) => {
-    const baseBadgeClass = "whitespace-nowrap px-2 py-0.5 text-xs font-semibold"
-    switch (status) {
-      case "PAID":
-        return <Badge className={`${baseBadgeClass} bg-green-500 hover:bg-green-600`}>Pago</Badge>
-      case "PAID_LATE":
-        return <Badge className={`${baseBadgeClass} bg-yellow-600 hover:bg-yellow-700`}>Pago com Atraso</Badge>
-      case "OVERDUE":
-        return <Badge variant="destructive" className={baseBadgeClass}>Atrasado</Badge>
-      default:
-        return <Badge variant="secondary" className={baseBadgeClass}>Pendente</Badge>
-    }
-  }
+  const columns = getPaymentColumns({ onMarkAsPaid: handleMarkAsPaid, onRefresh: refreshPayments })
+
+  const table = useReactTable({
+    data,
+    columns,
+    state: { sorting, expanded },
+    onSortingChange: setSorting,
+    onExpandedChange: setExpanded,
+    getSubRows: (row) => row.subRows,
+    getRowId: (row) => row.id.toString(),
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getExpandedRowModel: getExpandedRowModel(),
+  })
 
   const months = [
     { value: 1, label: "Janeiro" },
@@ -220,17 +223,17 @@ export default function PaymentsPage() {
                   <col className="w-[10%]" />
                 </colgroup>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead></TableHead>
-                    <TableHead>Pagador</TableHead>
-                    <TableHead className="text-center">Parcela</TableHead>
-                    <TableHead>Vencimento</TableHead>
-                    <TableHead>Data Pagamento</TableHead>
-                    <TableHead className="text-right">Valor Original</TableHead>
-                    <TableHead className="text-right">Valor Com Juros</TableHead>
-                    <TableHead className="text-center">Status</TableHead>
-                    <TableHead className="text-right"></TableHead>
-                  </TableRow>
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <TableRow key={headerGroup.id}>
+                      {headerGroup.headers.map((header) => (
+                        <TableHead key={header.id}>
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(header.column.columnDef.header, header.getContext())}
+                        </TableHead>
+                      ))}
+                    </TableRow>
+                  ))}
                 </TableHeader>
                 <TableBody>
                   {loading ? (
@@ -239,7 +242,7 @@ export default function PaymentsPage() {
                         Carregando...
                       </TableCell>
                     </TableRow>
-                  ) : payments.length === 0 ? (
+                  ) : data.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={9} className="h-40">
                         <div className="flex flex-col items-center justify-center gap-4 text-muted-foreground">
@@ -256,125 +259,20 @@ export default function PaymentsPage() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    payments.map((group) => (
-                      <>
-                        <TableRow
-                          key={group.mainPayment.id}
-                          className={cn(group.overduePayments.length > 0 && "bg-orange-50/30")}
-                        >
-                          <TableCell>
-                            {group.overduePayments.length > 0 && (
-                              <Button
-                                variant="ghost"
-                                size="icon-sm"
-                                onClick={() => toggleRow(group.mainPayment.id)}
-                              >
-                                {expandedRows[group.mainPayment.id] ? (
-                                  <ChevronDown className="h-4 w-4" />
-                                ) : (
-                                  <ChevronRight className="h-4 w-4" />
-                                )}
-                              </Button>
-                            )}
+                    table.getRowModel().rows.map((row) => (
+                      <TableRow
+                        key={row.id}
+                        className={cn(
+                          row.depth === 0 && (row.original.subRows?.length ?? 0) > 0 && "bg-orange-50/30",
+                          row.depth > 0 && "bg-muted/30"
+                        )}
+                      >
+                        {row.getVisibleCells().map((cell) => (
+                          <TableCell key={cell.id}>
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
                           </TableCell>
-                          <TableCell>
-                            <div className="flex flex-col">
-                              <span className="font-medium">{group.mainPayment.payerName}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {group.mainPayment.installmentNumber} / {group.mainPayment.totalInstallments}
-                          </TableCell>
-                          <TableCell>{formatDate(group.mainPayment.dueDate)}</TableCell>
-                          <TableCell>
-                            {group.mainPayment.paymentDate ? formatDate(group.mainPayment.paymentDate) : "---"}
-                          </TableCell>
-                          <TableCell className="text-right">{formatDisplayCurrency(group.mainPayment.originalValue)}</TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex flex-col items-end">
-                              <span>
-                                {group.mainPayment.paymentStatus === "PAID_LATE" && group.mainPayment.overdueValue
-                                  ? formatDisplayCurrency(group.mainPayment.overdueValue)
-                                  : group.mainPayment.overdueValue
-                                  ? formatDisplayCurrency(group.mainPayment.overdueValue)
-                                  : "---"}
-                              </span>
-                              {group.overduePayments.length > 0 && (
-                                <span className="text-[10px] text-orange-600 flex items-center gap-0.5 font-bold">
-                                  <AlertCircle className="h-3 w-3" />
-                                  Possui parcelas atrasadas
-                                </span>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-center">{getStatusBadge(group.mainPayment.paymentStatus)}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <PaymentDetailsDialog 
-                                payment={group.mainPayment} 
-                                onSuccess={refreshPayments}
-                              />
-                              {group.mainPayment.paymentStatus !== "PAID" && group.mainPayment.paymentStatus !== "PAID_LATE" && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-8 gap-1"
-                                  onClick={() => handleMarkAsPaid(group.mainPayment.id)}
-                                >
-                                  <Check className="h-3 w-3" />
-                                  Pagar
-                                </Button>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-
-                        {expandedRows[group.mainPayment.id] && group.overduePayments.map((overdue) => (
-                          <TableRow key={overdue.id} className="bg-muted/30">
-                            <TableCell></TableCell>
-                            <TableCell className="pl-8 text-xs text-muted-foreground italic">
-                              Parcela atrasada do grupo
-                            </TableCell>
-                            <TableCell className="text-xs text-center">
-                              {overdue.installmentNumber} / {overdue.totalInstallments}
-                            </TableCell>
-                            <TableCell className="text-xs">{formatDate(overdue.dueDate)}</TableCell>
-                            <TableCell className="text-xs">
-                              {overdue.paymentDate ? formatDate(overdue.paymentDate) : "---"}
-                            </TableCell>
-                            <TableCell className="text-xs text-right">{formatDisplayCurrency(overdue.originalValue)}</TableCell>
-                            <TableCell className="text-xs text-right">
-                              <span className={overdue.paymentStatus === "PAID_LATE" ? "font-medium text-yellow-700" : overdue.paymentStatus === "OVERDUE" ? "font-medium text-destructive" : ""}>
-                                {overdue.paymentStatus === "PAID_LATE" && overdue.overdueValue
-                                  ? formatDisplayCurrency(overdue.overdueValue)
-                                  : overdue.overdueValue
-                                  ? formatDisplayCurrency(overdue.overdueValue)
-                                  : "---"}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-center">{getStatusBadge(overdue.paymentStatus)}</TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <PaymentDetailsDialog 
-                                  payment={overdue} 
-                                  onSuccess={refreshPayments}
-                                />
-                                {overdue.paymentStatus !== "PAID" && overdue.paymentStatus !== "PAID_LATE" && (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-7 gap-1 text-xs"
-                                    onClick={() => handleMarkAsPaid(overdue.id)}
-                                  >
-                                    <Check className="h-3 w-3" />
-                                    Pagar
-                                  </Button>
-                                )}
-                              </div>
-                            </TableCell>
-                          </TableRow>
                         ))}
-                      </>
+                      </TableRow>
                     ))
                   )}
                 </TableBody>

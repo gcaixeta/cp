@@ -91,8 +91,61 @@ services:
       retries: 3
       start_period: 40s
 
+  # Loki - armazenamento e indexação de logs
+  loki:
+    image: grafana/loki:2.9.10
+    container_name: cpsystem-loki
+    command: -config.file=/etc/loki/loki-config.yaml -config.expand-env=true
+    environment:
+      LOKI_RETENTION_DAYS: ${LOKI_RETENTION_DAYS:-30}
+    volumes:
+      - ./observability/loki-config.yaml:/etc/loki/loki-config.yaml:ro
+      - loki_data:/loki
+    networks:
+      - cpsystem-network
+    restart: unless-stopped
+
+  # Promtail - coleta os logs de todos os containers (via Docker socket) e envia ao Loki
+  promtail:
+    image: grafana/promtail:2.9.10
+    container_name: cpsystem-promtail
+    command: -config.file=/etc/promtail/promtail-config.yaml
+    volumes:
+      - ./observability/promtail-config.yaml:/etc/promtail/promtail-config.yaml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    depends_on:
+      - loki
+    networks:
+      - cpsystem-network
+    restart: unless-stopped
+
+  # Grafana - consulta e visualização dos logs (LogQL)
+  grafana:
+    image: grafana/grafana:11.4.0
+    container_name: cpsystem-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    # Publicado só em localhost: acesse via túnel SSH
+    # (ssh -L 3001:localhost:3001 usuario@vps), nunca exposto publicamente.
+    ports:
+      - "127.0.0.1:3001:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - loki
+    networks:
+      - cpsystem-network
+    restart: unless-stopped
+
 volumes:
   postgres_data:
+    driver: local
+  loki_data:
+    driver: local
+  grafana_data:
     driver: local
 
 networks:
