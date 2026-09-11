@@ -12,7 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -160,13 +159,8 @@ public class PaymentService {
         }
 
         BigDecimal originalValue = payment.getOriginalValue();
-        BigDecimal lateFeeRate = group.getLateFeeRate() != null ? group.getLateFeeRate() : BigDecimal.ZERO;
-        BigDecimal monthlyInterestRate = group.getMonthlyInterestRate() != null ? group.getMonthlyInterestRate() : BigDecimal.ZERO;
-
-        BigDecimal lateFee = originalValue.multiply(lateFeeRate);
-        BigDecimal dailyInterestRate = monthlyInterestRate.divide(BigDecimal.valueOf(30), 10, RoundingMode.HALF_UP);
-        BigDecimal totalInterest = originalValue.multiply(dailyInterestRate).multiply(BigDecimal.valueOf(daysOverdue));
-        BigDecimal newOverdueValue = originalValue.add(lateFee).add(totalInterest).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal newOverdueValue = OverdueCalculator.calculateOverdueValue(
+                originalValue, group.getLateFeeRate(), group.getMonthlyInterestRate(), daysOverdue);
 
         payment.setOverdueValue(newOverdueValue);
         payment.setOverdueValueDate(referenceDate);

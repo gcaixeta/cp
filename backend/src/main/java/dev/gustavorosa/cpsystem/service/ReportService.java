@@ -3,6 +3,7 @@ package dev.gustavorosa.cpsystem.service;
 import dev.gustavorosa.cpsystem.api.response.MonthlyReportData;
 import dev.gustavorosa.cpsystem.model.Client;
 import dev.gustavorosa.cpsystem.model.Payment;
+import dev.gustavorosa.cpsystem.model.PaymentGroup;
 import dev.gustavorosa.cpsystem.model.PaymentStatus;
 import dev.gustavorosa.cpsystem.repository.PaymentRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -10,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.temporal.ChronoUnit;
@@ -77,26 +79,33 @@ public class ReportService {
         double paidOnDueDatePct = total > 0 ? (paidOnDueDate * 100.0) / total : 0;
         double paidLatePct = total > 0 ? (paidLate * 100.0) / total : 0;
 
-        // Total received = sum of originalValue (or overdueValue if PAID_LATE) for payments paid in the month
+        // Total received = sum of originalValue (or valor com multa/juros se PAID_LATE) para pagamentos do mês.
+        // Soma cada parcela com precisão total e arredonda só o total, para não divergir do valor
+        // combinado do banco por causa da soma de centavos já arredondados individualmente.
         BigDecimal totalReceived = paidInMonth.stream()
                 .map(p -> {
-                    if (p.getPaymentStatus() == PaymentStatus.PAID_LATE && p.getOverdueValue() != null) {
-                        return p.getOverdueValue();
+                    if (p.getPaymentStatus() == PaymentStatus.PAID_LATE && p.getPaymentDate() != null) {
+                        long daysLate = ChronoUnit.DAYS.between(p.getDueDate(), p.getPaymentDate());
+                        return p.getOriginalValue().add(surcharge(p, daysLate));
                     }
                     return p.getOriginalValue();
                 })
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(2, RoundingMode.HALF_UP);
 
-        // Total outstanding = sum of pending + overdue payments' values
+        // Total outstanding = sum of pending + overdue payments' values (mesma lógica de precisão acima)
+        LocalDate today = LocalDate.now();
         BigDecimal totalOutstanding = dueInMonth.stream()
                 .filter(p -> p.getPaymentStatus() == PaymentStatus.PENDING || p.getPaymentStatus() == PaymentStatus.OVERDUE)
                 .map(p -> {
-                    if (p.getPaymentStatus() == PaymentStatus.OVERDUE && p.getOverdueValue() != null) {
-                        return p.getOverdueValue();
+                    if (p.getPaymentStatus() == PaymentStatus.OVERDUE) {
+                        long daysOverdue = ChronoUnit.DAYS.between(p.getDueDate(), today);
+                        return p.getOriginalValue().add(surcharge(p, daysOverdue));
                     }
                     return p.getOriginalValue();
                 })
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(2, RoundingMode.HALF_UP);
 
         // Average days late for PAID_LATE payments only (positive = days overdue)
         List<Payment> latePaidPayments = dueInMonth.stream()
@@ -123,5 +132,14 @@ public class ReportService {
                 totalReceived, totalOutstanding,
                 avgDaysLate, sortedPayments
         );
+    }
+
+    private BigDecimal surcharge(Payment payment, long daysLate) {
+        PaymentGroup group = payment.getPaymentGroup();
+        if (group == null) {
+            return BigDecimal.ZERO;
+        }
+        return OverdueCalculator.calculateSurcharge(
+                payment.getOriginalValue(), group.getLateFeeRate(), group.getMonthlyInterestRate(), daysLate);
     }
 }
