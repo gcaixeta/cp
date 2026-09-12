@@ -41,6 +41,11 @@ export interface GroupedPaymentResponse {
   overduePayments: PaymentResponse[];
 }
 
+export interface RecalculateOverdueInterestResult {
+  paymentsMarkedOverdue: number;
+  paymentsRecalculated: number;
+}
+
 export interface PaymentGroupData {
   id: number;
   payerName: string;
@@ -312,4 +317,11 @@ export async function downloadMonthlyReport(clientId: number, month: number, yea
     throw new Error(`Failed to generate report: ${response.status}`);
   }
   return response.blob();
+}
+
+export async function recalculateOverdueInterest(): Promise<RecalculateOverdueInterestResult> {
+  const response = await fetchWithAuth(`${API_BASE_URL}/jobs/recalculate-overdue-interest`, {
+    method: 'POST',
+  });
+  return handleResponse<RecalculateOverdueInterestResult>(response);
 }

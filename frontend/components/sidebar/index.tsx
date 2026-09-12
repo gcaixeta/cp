@@ -1,13 +1,17 @@
 "use client";
 
-import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet"
+import { useState } from "react"
+import { Sheet, SheetTrigger, SheetContent, SheetClose } from "@/components/ui/sheet"
 import { Button } from "../ui/button"
 import Link from "next/link"
 import { Banknote, FileText, ClipboardList, Home, LayoutDashboardIcon, LogOut, Package, PanelLeft, Settings, Users } from "lucide-react"
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "../ui/tooltip"
 import { logout } from "@/lib/auth"
+import { SettingsDialog } from "@/components/settings-dialog"
 
 export function Sidebar() {
+  const [settingsOpen, setSettingsOpen] = useState(false)
+
   const handleLogout = (e: React.MouseEvent) => {
     e.preventDefault();
     logout();
@@ -91,14 +95,14 @@ export function Sidebar() {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Link
-                  href="#"
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg 
+                <button
+                  onClick={() => setSettingsOpen(true)}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg
                   text-muted-foreground transition-colors hover:text-foreground"
                 >
                   <Settings className="h-5 w-5" />
                   <span className="sr-only">Configuracoes</span>
-                </Link>
+                </button>
               </TooltipTrigger>
               <TooltipContent side="right">Configuracoes</TooltipContent>
             </Tooltip>
@@ -177,13 +181,15 @@ export function Sidebar() {
                 </Link>
 
 
-                <Link
-                  href="#"
-                  className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
-                >
-                  <Settings className="h-5 w-5 transition-all" />
-                  Configuracoes
-                </Link>
+                <SheetClose asChild>
+                  <button
+                    onClick={() => setSettingsOpen(true)}
+                    className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+                  >
+                    <Settings className="h-5 w-5 transition-all" />
+                    Configuracoes
+                  </button>
+                </SheetClose>
 
 
                 <button
@@ -199,6 +205,8 @@ export function Sidebar() {
           <h2>Menu</h2>
         </header>
       </div>
+
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </div >
   )
 }
