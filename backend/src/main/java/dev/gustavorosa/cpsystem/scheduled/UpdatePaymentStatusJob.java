@@ -22,15 +22,16 @@ public class UpdatePaymentStatusJob {
     private PaymentRepository paymentRepository;
 
     @Scheduled(cron = "0 0 2 * * *", zone = "America/Sao_Paulo")
-    public void updatePaymentStatus() {
+    public int updatePaymentStatus() {
         log.info("Starting update of payment status...");
         int affectedRows = paymentRepository.updatePaymentStatus();
         log.info("Update payment status job done. {} rows updated!", affectedRows);
+        return affectedRows;
     }
 
 
-    @Scheduled(cron = "0 30 2 * * *", zone = "America/Sao_Paulo") 
-    public void updatePaymentOverdueValues() {
+    @Scheduled(cron = "0 30 2 * * *", zone = "America/Sao_Paulo")
+    public int updatePaymentOverdueValues() {
         log.info("Starting update of overdue payment values...");
         int updatedPayments = 0;
         
@@ -81,5 +82,6 @@ public class UpdatePaymentStatusJob {
             paymentRepository.saveAll(overduePayments);
         }
         log.info("Finished updating values for {} payments.", updatedPayments);
+        return updatedPayments;
     }
 }
