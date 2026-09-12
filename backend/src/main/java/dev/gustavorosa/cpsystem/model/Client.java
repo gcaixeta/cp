@@ -1,5 +1,6 @@
 package dev.gustavorosa.cpsystem.model;
 
+import dev.gustavorosa.cpsystem.utils.NameUtils;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -41,4 +42,10 @@ public class Client {
     @Column(name = "monthly_interest_rate", precision = 10, scale = 4)
     private BigDecimal monthlyInterestRate;
 
+
+    @PrePersist
+    @PreUpdate
+    void normalizeName() {
+        name = NameUtils.toTitleCase(name);
+    }
 }

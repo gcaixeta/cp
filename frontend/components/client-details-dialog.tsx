@@ -44,7 +44,7 @@ interface ClientDetailsDialogProps {
 }
 
 const formSchema = z.object({
-  clientName: z.string().min(3, "Nome deve ter no mínimo 3 caracteres").max(100, "Nome deve ter no máximo 100 caracteres"),
+  clientName: z.string().trim().min(3, "Nome deve ter no mínimo 3 caracteres").max(100, "Nome deve ter no máximo 100 caracteres"),
   document: z.string().min(11, "CPF/CNPJ inválido").max(18, "CPF/CNPJ inválido"),
   phone: z.string().optional(),
   address: z.string().min(5, "Endereço deve ter no mínimo 5 caracteres"),

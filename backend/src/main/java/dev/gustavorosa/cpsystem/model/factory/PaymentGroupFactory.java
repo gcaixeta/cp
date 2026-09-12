@@ -1,5 +1,6 @@
 package dev.gustavorosa.cpsystem.model.factory;
 
+import dev.gustavorosa.cpsystem.utils.NameUtils;
 import dev.gustavorosa.cpsystem.api.request.CreatePaymentGroupRequest;
 import dev.gustavorosa.cpsystem.exception.NoClientFoundException;
 import dev.gustavorosa.cpsystem.model.Client;
@@ -53,7 +54,7 @@ public class PaymentGroupFactory {
             payments.add(Payment.builder()
                 .client(newPaymentGroup.getClient())
                 .paymentGroup(newPaymentGroup)
-                .payerName(dto.payerName())
+                .payerName(NameUtils.toTitleCase(dto.payerName()))
                 .payerDocument(newPaymentGroup.getPayerDocument())
                 .installmentNumber(i)
                 .totalInstallments(newPaymentGroup.getTotalInstallments())

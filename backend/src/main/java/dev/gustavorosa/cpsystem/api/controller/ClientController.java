@@ -4,6 +4,7 @@ import dev.gustavorosa.cpsystem.api.request.CreateClientRequest;
 import dev.gustavorosa.cpsystem.api.request.UpdateClientRequest;
 import dev.gustavorosa.cpsystem.model.Client;
 import dev.gustavorosa.cpsystem.service.ClientService;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +23,7 @@ public class ClientController {
     private ClientService clientService;
 
     @PostMapping
-    public ResponseEntity<Long> createClient(@RequestBody CreateClientRequest request) {
+    public ResponseEntity<Long> createClient(@Valid @RequestBody CreateClientRequest request) {
         log.info("[Entry - ClientController.createClient] - Creating client: {}", request);
         Long newClientId = clientService.createClient(request);
         log.info("[Exit - ClientController.createClient] - Client created successfully. New client id: {}", newClientId);
@@ -46,7 +47,7 @@ public class ClientController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Client> updateClient(@PathVariable Long id, @RequestBody UpdateClientRequest request) {
+    public ResponseEntity<Client> updateClient(@PathVariable Long id, @Valid @RequestBody UpdateClientRequest request) {
         log.info("[Entry - ClientController.updateClient] - Updating client with id: {}, request: {}", id, request);
         Client updatedClient = clientService.updateClient(id, request);
         log.info("[Exit - ClientController.updateClient] - Client updated successfully: {}", updatedClient);

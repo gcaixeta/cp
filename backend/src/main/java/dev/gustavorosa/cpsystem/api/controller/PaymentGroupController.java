@@ -3,6 +3,7 @@ package dev.gustavorosa.cpsystem.api.controller;
 import dev.gustavorosa.cpsystem.api.request.CreatePaymentGroupRequest;
 import dev.gustavorosa.cpsystem.api.response.PaymentGroupResponse;
 import dev.gustavorosa.cpsystem.service.PaymentGroupService;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -35,7 +36,7 @@ public class PaymentGroupController {
     }
 
     @PostMapping
-    public ResponseEntity<Void> createPaymentGroup(@RequestBody CreatePaymentGroupRequest request) {
+    public ResponseEntity<Void> createPaymentGroup(@Valid @RequestBody CreatePaymentGroupRequest request) {
         log.info("[Entry - PaymentGroupController.createPaymentGroup] - Creating payment group: {}", request);
         paymentGroupService.createPaymentGroup(request);
         log.info("[Exit - PaymentGroupController.createPaymentGroup] - Payment group created successfully");

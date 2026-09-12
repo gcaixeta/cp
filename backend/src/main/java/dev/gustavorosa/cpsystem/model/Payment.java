@@ -1,6 +1,7 @@
 package dev.gustavorosa.cpsystem.model;
 
 import dev.gustavorosa.cpsystem.api.response.PaymentResponse;
+import dev.gustavorosa.cpsystem.utils.NameUtils;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -78,5 +79,11 @@ public class Payment {
                 this.getPaymentStatus(),
                 this.getObservation()
         );
+    }
+
+    @PrePersist
+    @PreUpdate
+    void normalizePayerName() {
+        payerName = NameUtils.toTitleCase(payerName);
     }
 }

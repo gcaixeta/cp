@@ -48,7 +48,7 @@ import { formatDocument as formatDocumentInput, formatPhone, formatInputCurrency
 
 const formSchema = z.object({
   clientId: z.string().min(1, "Selecione um cliente"),
-  payerName: z.string().min(3, "Nome deve ter no mínimo 3 caracteres").max(100, "Nome deve ter no máximo 100 caracteres"),
+  payerName: z.string().trim().min(3, "Nome deve ter no mínimo 3 caracteres").max(50, "Nome deve ter no máximo 50 caracteres"),
   payerDocument: z.string().min(11, "CPF/CNPJ inválido").max(18, "CPF/CNPJ inválido"),
   payerPhone: z.string().optional(),
   monthlyValue: z.string().min(1, "Valor mensal é obrigatório"),
